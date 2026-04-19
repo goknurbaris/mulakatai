@@ -42,3 +42,16 @@ Then open: `http://127.0.0.1:9000`
 ```bash
 php artisan test
 ```
+
+## AI scoring setup (OpenAI-compatible)
+
+By default, the app uses deterministic fallback scoring.  
+To enable real AI evaluation, set these in `.env`:
+
+```bash
+INTERVIEW_AI_ENABLED=true
+INTERVIEW_AI_BASE_URL=https://api.openai.com
+INTERVIEW_AI_CHAT_ENDPOINT=/v1/chat/completions
+INTERVIEW_AI_MODEL=gpt-4.1-mini
+INTERVIEW_AI_API_KEY=your_api_key
+```
