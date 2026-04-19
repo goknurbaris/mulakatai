@@ -2,7 +2,12 @@
 
 namespace App\Services\Interview;
 
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use JsonException;
 
 class ResponseEvaluator
 {
@@ -11,6 +16,134 @@ class ResponseEvaluator
      * @return array<string, mixed>
      */
     public function evaluate(array $question, string $answer): array
+    {
+        if (! $this->aiScoringEnabled()) {
+            return $this->evaluateDeterministically($question, $answer);
+        }
+
+        $aiResult = $this->evaluateWithAi($question, $answer);
+
+        if ($aiResult !== null) {
+            return $aiResult;
+        }
+
+        return $this->evaluateDeterministically($question, $answer);
+    }
+
+    /**
+     * @param  array<string, mixed>  $question
+     * @return array<string, mixed>|null
+     */
+    private function evaluateWithAi(array $question, string $answer): ?array
+    {
+        $baseUrl = (string) config('services.interview_ai.base_url');
+        $endpoint = (string) config('services.interview_ai.chat_endpoint');
+        $model = (string) config('services.interview_ai.model');
+        $apiKey = (string) config('services.interview_ai.api_key');
+        $timeout = (int) config('services.interview_ai.timeout', 25);
+        $retries = (int) config('services.interview_ai.retries', 2);
+        $retrySleepMs = (int) config('services.interview_ai.retry_sleep_ms', 350);
+
+        $payload = [
+            'model' => $model,
+            'temperature' => 0.2,
+            'messages' => [
+                [
+                    'role' => 'system',
+                    'content' => <<<'PROMPT'
+You are an interview evaluator.
+Evaluate the user's answer and return ONLY JSON with this exact shape:
+{
+  "score": 0-100 integer,
+  "strengths": ["short bullet", "..."],
+  "gaps": ["short bullet", "..."],
+  "ideal_answer": "concise ideal answer",
+  "next_question_difficulty": "easy|medium|hard",
+  "breakdown": {
+    "accuracy": 0-100 integer,
+    "depth": 0-100 integer,
+    "clarity": 0-100 integer,
+    "problem_solving": 0-100 integer
+  }
+}
+Scoring weights:
+- accuracy: 40%
+- depth: 25%
+- clarity: 20%
+- problem_solving: 15%
+Do not include markdown or explanations outside JSON.
+PROMPT,
+                ],
+                [
+                    'role' => 'user',
+                    'content' => json_encode([
+                        'question' => $question['question'] ?? '',
+                        'topic' => $question['topic'] ?? '',
+                        'difficulty' => $question['difficulty'] ?? '',
+                        'expected_keywords' => $question['keywords'] ?? [],
+                        'ideal_reference' => $question['ideal_answer'] ?? '',
+                        'candidate_answer' => $answer,
+                    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ],
+            ],
+        ];
+
+        try {
+            $response = Http::baseUrl($baseUrl)
+                ->withToken($apiKey)
+                ->acceptJson()
+                ->asJson()
+                ->timeout($timeout)
+                ->retry($retries, $retrySleepMs)
+                ->post($endpoint, $payload)
+                ->throw();
+        } catch (ConnectionException|RequestException $exception) {
+            Log::warning('AI scoring request failed, using deterministic fallback.', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        $rawContent = $response->json('choices.0.message.content');
+
+        if (! is_string($rawContent) || trim($rawContent) === '') {
+            Log::warning('AI scoring returned empty content, using deterministic fallback.');
+
+            return null;
+        }
+
+        try {
+            /** @var mixed $decoded */
+            $decoded = json_decode($rawContent, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            Log::warning('AI scoring returned invalid JSON, using deterministic fallback.', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        if (! is_array($decoded)) {
+            Log::warning('AI scoring JSON payload is not an object, using deterministic fallback.');
+
+            return null;
+        }
+
+        $normalized = $this->normalizeAiResult($decoded, (string) ($question['ideal_answer'] ?? ''));
+
+        if ($normalized === null) {
+            Log::warning('AI scoring payload failed schema validation, using deterministic fallback.');
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param  array<string, mixed>  $question
+     * @return array<string, mixed>
+     */
+    private function evaluateDeterministically(array $question, string $answer): array
     {
         $normalized = Str::of($answer)->lower()->toString();
         $words = str_word_count($answer);
@@ -66,6 +199,76 @@ class ResponseEvaluator
                 'clarity' => $clarity,
                 'problem_solving' => $approach,
             ],
+            'source' => 'deterministic_fallback',
+        ];
+    }
+
+    private function aiScoringEnabled(): bool
+    {
+        return (bool) config('services.interview_ai.enabled')
+            && filled(config('services.interview_ai.api_key'))
+            && filled(config('services.interview_ai.base_url'))
+            && filled(config('services.interview_ai.model'))
+            && filled(config('services.interview_ai.chat_endpoint'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $decoded
+     * @return array<string, mixed>|null
+     */
+    private function normalizeAiResult(array $decoded, string $idealAnswerFallback): ?array
+    {
+        if (! isset($decoded['score'], $decoded['strengths'], $decoded['gaps'], $decoded['next_question_difficulty'])) {
+            return null;
+        }
+
+        if (! is_array($decoded['strengths']) || ! is_array($decoded['gaps'])) {
+            return null;
+        }
+
+        $score = (int) $decoded['score'];
+        $difficulty = (string) $decoded['next_question_difficulty'];
+
+        if (! in_array($difficulty, ['easy', 'medium', 'hard'], true)) {
+            return null;
+        }
+
+        $strengths = array_values(array_filter(
+            array_map(fn (mixed $item): ?string => is_string($item) && trim($item) !== '' ? trim($item) : null, $decoded['strengths'])
+        ));
+        $gaps = array_values(array_filter(
+            array_map(fn (mixed $item): ?string => is_string($item) && trim($item) !== '' ? trim($item) : null, $decoded['gaps'])
+        ));
+
+        if ($strengths === [] || $gaps === []) {
+            return null;
+        }
+
+        $breakdown = $decoded['breakdown'] ?? [];
+        if (! is_array($breakdown)) {
+            $breakdown = [];
+        }
+
+        $accuracy = (int) ($breakdown['accuracy'] ?? $score);
+        $depth = (int) ($breakdown['depth'] ?? $score);
+        $clarity = (int) ($breakdown['clarity'] ?? $score);
+        $problemSolving = (int) ($breakdown['problem_solving'] ?? $score);
+
+        return [
+            'score' => max(0, min(100, $score)),
+            'strengths' => $strengths,
+            'gaps' => $gaps,
+            'ideal_answer' => is_string($decoded['ideal_answer'] ?? null) && trim((string) $decoded['ideal_answer']) !== ''
+                ? trim((string) $decoded['ideal_answer'])
+                : $idealAnswerFallback,
+            'next_question_difficulty' => $difficulty,
+            'breakdown' => [
+                'accuracy' => max(0, min(100, $accuracy)),
+                'depth' => max(0, min(100, $depth)),
+                'clarity' => max(0, min(100, $clarity)),
+                'problem_solving' => max(0, min(100, $problemSolving)),
+            ],
+            'source' => 'ai',
         ];
     }
 

@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'interview_ai' => [
+        'enabled' => env('INTERVIEW_AI_ENABLED', false),
+        'base_url' => env('INTERVIEW_AI_BASE_URL', 'https://api.openai.com'),
+        'chat_endpoint' => env('INTERVIEW_AI_CHAT_ENDPOINT', '/v1/chat/completions'),
+        'model' => env('INTERVIEW_AI_MODEL', 'gpt-4.1-mini'),
+        'api_key' => env('INTERVIEW_AI_API_KEY'),
+        'timeout' => env('INTERVIEW_AI_TIMEOUT', 25),
+        'retries' => env('INTERVIEW_AI_RETRIES', 2),
+        'retry_sleep_ms' => env('INTERVIEW_AI_RETRY_SLEEP_MS', 350),
+    ],
+
 ];
