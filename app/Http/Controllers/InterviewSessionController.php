@@ -8,30 +8,41 @@ use App\Services\Interview\LearningPlanBuilder;
 use App\Services\Interview\QuestionBank;
 use App\Services\Interview\ResponseEvaluator;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
 class InterviewSessionController extends Controller
 {
-    public function start(): View
+    public function start(QuestionBank $questionBank): View
     {
-        return view('interviews.start');
+        return view('interviews.start', [
+            'roleOptions' => $questionBank->roleOptions(),
+            'topicOptionsByRole' => $questionBank->topicOptionsByRole(),
+        ]);
     }
 
     public function store(Request $request, QuestionBank $questionBank): Response
     {
+        $roleKeys = array_keys($questionBank->roleOptions());
+
         $validated = $request->validate([
-            'role' => ['required', 'in:frontend-react'],
+            'role' => ['required', Rule::in($roleKeys)],
             'level' => ['required', 'in:junior,mid'],
         ]);
 
-        $questions = $questionBank->forRoleLevel($validated['role'], $validated['level']);
+        $focusValidated = $request->validate([
+            'focus_topic' => ['required', 'string', Rule::in($questionBank->topicOptionsForRole($validated['role']))],
+        ]);
+
+        $questions = $questionBank->forRoleLevel($validated['role'], $validated['level'], $focusValidated['focus_topic']);
 
         abort_if($questions === [], 422, 'No interview questions available for this role.');
 
         $session = InterviewSession::create([
             'role' => $validated['role'],
             'level' => $validated['level'],
+            'focus_topic' => $focusValidated['focus_topic'],
             'questions_snapshot' => $questions,
             'current_question_index' => 0,
             'status' => 'in_progress',
