@@ -11,6 +11,7 @@ class InterviewSession extends Model
     protected $fillable = [
         'role',
         'level',
+        'focus_topic',
         'status',
         'current_question_index',
         'total_score',
