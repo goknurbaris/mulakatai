@@ -13,8 +13,9 @@ class InterviewFlowTest extends TestCase
     public function test_user_can_complete_a_text_interview_session(): void
     {
         $this->post(route('interviews.store'), [
-            'role' => 'frontend-react',
+            'role' => 'frontend',
             'level' => 'junior',
+            'focus_topic' => 'React State',
         ])->assertRedirect();
 
         /** @var InterviewSession $session */
@@ -52,8 +53,9 @@ class InterviewFlowTest extends TestCase
     public function test_answer_must_have_minimum_length(): void
     {
         $this->post(route('interviews.store'), [
-            'role' => 'frontend-react',
+            'role' => 'backend',
             'level' => 'junior',
+            'focus_topic' => 'Eloquent',
         ]);
 
         $session = InterviewSession::query()->firstOrFail();
@@ -61,5 +63,21 @@ class InterviewFlowTest extends TestCase
         $this->post(route('interviews.answer', $session), [
             'answer' => 'too short',
         ])->assertSessionHasErrors('answer');
+    }
+
+    public function test_user_can_start_interview_with_fullstack_field(): void
+    {
+        $this->post(route('interviews.store'), [
+            'role' => 'fullstack',
+            'level' => 'mid',
+            'focus_topic' => 'API Design',
+        ])->assertRedirect();
+
+        $session = InterviewSession::query()->firstOrFail();
+
+        $this->assertSame('fullstack', $session->role);
+        $this->assertSame('API Design', $session->focus_topic);
+        $this->assertCount(10, $session->questions_snapshot);
+        $this->assertSame('API Design', $session->questions_snapshot[0]['topic']);
     }
 }

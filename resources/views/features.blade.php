@@ -23,7 +23,7 @@
         <section class="mt-8 grid gap-4 md:grid-cols-3">
             <article class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
                 <h2 class="text-lg font-semibold text-white">Role-specific simulation</h2>
-                <p class="mt-2 text-sm text-zinc-400">Frontend/React interview flow with 10 guided questions.</p>
+                <p class="mt-2 text-sm text-zinc-400">Frontend, Backend, or Fullstack interview flow with 10 guided questions.</p>
             </article>
             <article class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
                 <h2 class="text-lg font-semibold text-white">AI scoring engine</h2>

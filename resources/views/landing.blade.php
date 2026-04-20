@@ -38,7 +38,7 @@
             <section id="features" class="mt-16 grid scroll-mt-24 gap-4 md:grid-cols-3">
                 <article class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
                     <h2 class="text-lg font-semibold text-white">Role-specific simulation</h2>
-                    <p class="mt-2 text-sm text-zinc-400">Start with Frontend/React and answer 10 interview questions in a realistic flow.</p>
+                    <p class="mt-2 text-sm text-zinc-400">Choose Frontend, Backend, or Fullstack and answer 10 interview questions in a realistic flow.</p>
                     <a href="{{ route('interviews.start') }}" class="mt-4 inline-flex text-sm font-medium text-indigo-300 hover:text-indigo-200">Start now →</a>
                 </article>
                 <article class="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">

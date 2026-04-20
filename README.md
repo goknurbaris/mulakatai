@@ -5,7 +5,7 @@ AI-powered technical interview simulator built with Laravel.
 ## Current MVP
 
 - Text-based interview flow (10 questions)
-- Role track: Frontend / React
+- Role track: Frontend, Backend, or Fullstack
 - Level selection: Junior or Mid
 - Per-answer scoring with structured feedback:
   - Accuracy (40%)
