@@ -34,15 +34,17 @@
                         ← Back to introduction
                     </a>
                     <h2 class="text-xl font-semibold text-white">Start your mock interview</h2>
-                    <p class="mt-2 text-sm text-zinc-400">Choose your track and level to begin.</p>
+                    <p class="mt-2 text-sm text-zinc-400">Choose your field and level to begin.</p>
 
         <form method="POST" action="{{ route('interviews.store') }}">
             @csrf
                         <div class="mt-6 space-y-5">
                             <div>
-                                <label for="role" class="mb-2 block text-sm font-medium text-zinc-200">Role Track</label>
+                                <label for="role" class="mb-2 block text-sm font-medium text-zinc-200">Field / Role</label>
                                 <select name="role" id="role" required class="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30">
-                    <option value="frontend-react" @selected(old('role') === 'frontend-react')>Frontend / React</option>
+                    @foreach ($roleOptions as $roleValue => $roleLabel)
+                    <option value="{{ $roleValue }}" @selected(old('role') === $roleValue)>{{ $roleLabel }}</option>
+                    @endforeach
                 </select>
                 @error('role')
                                     <div class="mt-2 text-sm text-rose-400">{{ $message }}</div>
@@ -60,6 +62,14 @@
                 @enderror
             </div>
 
+                            <div>
+                                <label for="focus_topic" class="mb-2 block text-sm font-medium text-zinc-200">Bölüm / Focus Topic</label>
+                                <select name="focus_topic" id="focus_topic" required class="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"></select>
+                @error('focus_topic')
+                                    <div class="mt-2 text-sm text-rose-400">{{ $message }}</div>
+                @enderror
+                            </div>
+
                             <button type="submit" class="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200">
                                 Start 10-Question Interview
                             </button>
@@ -69,5 +79,32 @@
             </div>
         </section>
     </main>
+    <script>
+        (() => {
+            const roleSelect = document.getElementById('role');
+            const topicSelect = document.getElementById('focus_topic');
+            const topicOptionsByRole = @json($topicOptionsByRole);
+            const oldTopic = @json(old('focus_topic'));
+
+            function fillTopicOptions(roleKey) {
+                const topics = topicOptionsByRole[roleKey] ?? [];
+                topicSelect.innerHTML = '';
+
+                topics.forEach((topic) => {
+                    const option = document.createElement('option');
+                    option.value = topic;
+                    option.textContent = topic;
+                    topicSelect.appendChild(option);
+                });
+
+                if (oldTopic && topics.includes(oldTopic)) {
+                    topicSelect.value = oldTopic;
+                }
+            }
+
+            fillTopicOptions(roleSelect.value);
+            roleSelect.addEventListener('change', () => fillTopicOptions(roleSelect.value));
+        })();
+    </script>
 </body>
 </html>

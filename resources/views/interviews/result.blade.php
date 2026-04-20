@@ -13,7 +13,7 @@
         <section class="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6 shadow-xl shadow-black/30">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <p class="text-sm text-zinc-400">Role: {{ $session->role }} | Level: {{ strtoupper($session->level) }}</p>
+                    <p class="text-sm text-zinc-400">Role: {{ $session->role }} | Level: {{ strtoupper($session->level) }} | Focus: {{ $session->focus_topic ?? '-' }}</p>
                     <p class="mt-1 text-4xl font-bold text-white">{{ number_format($session->total_score ?? 0, 1) }}<span class="text-lg text-zinc-400">/100</span></p>
                 </div>
             </div>
