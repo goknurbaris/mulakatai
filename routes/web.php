@@ -3,7 +3,9 @@
 use App\Http\Controllers\InterviewSessionController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [InterviewSessionController::class, 'start'])->name('interviews.start');
+Route::view('/', 'landing')->name('landing');
+Route::view('/features', 'features')->name('features');
+Route::get('/app', [InterviewSessionController::class, 'start'])->name('interviews.start');
 Route::post('/interviews', [InterviewSessionController::class, 'store'])->name('interviews.store');
 Route::get('/interviews/{interviewSession}', [InterviewSessionController::class, 'show'])->name('interviews.show');
 Route::post('/interviews/{interviewSession}/answers', [InterviewSessionController::class, 'submitAnswer'])->name('interviews.answer');

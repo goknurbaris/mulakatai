@@ -30,6 +30,9 @@
                 </div>
 
                 <div class="p-8">
+                    <a href="{{ route('landing') }}" class="inline-flex items-center text-xs font-medium text-zinc-400 transition hover:text-zinc-200">
+                        ← Back to introduction
+                    </a>
                     <h2 class="text-xl font-semibold text-white">Start your mock interview</h2>
                     <p class="mt-2 text-sm text-zinc-400">Choose your track and level to begin.</p>
 
