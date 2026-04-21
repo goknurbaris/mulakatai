@@ -16,6 +16,11 @@ class QuestionBank
         ];
     }
 
+    public function roleLabel(string $role): string
+    {
+        return $this->roleOptions()[$role] ?? ucfirst($role);
+    }
+
     /**
      * @return array<string, array<int, string>>
      */

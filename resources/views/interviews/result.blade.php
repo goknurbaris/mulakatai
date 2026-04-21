@@ -8,12 +8,19 @@
 </head>
 <body class="min-h-screen bg-zinc-950 text-zinc-100">
     <main class="mx-auto w-full max-w-5xl px-4 py-10">
+        <div class="mb-4 flex items-center justify-between">
+            <a href="{{ route('interviews.history') }}" class="text-xs font-medium text-zinc-400 transition hover:text-zinc-200">← Back to dashboard</a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="text-xs font-medium text-zinc-400 transition hover:text-zinc-200">Logout</button>
+            </form>
+        </div>
         <h1 class="text-3xl font-semibold tracking-tight text-white">Interview Summary</h1>
 
         <section class="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6 shadow-xl shadow-black/30">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <p class="text-sm text-zinc-400">Role: {{ $session->role }} | Level: {{ strtoupper($session->level) }} | Focus: {{ $session->focus_topic ?? '-' }}</p>
+                    <p class="text-sm text-zinc-400">Role: {{ $roleLabel }} | Level: {{ strtoupper($session->level) }} | Focus: {{ $session->focus_topic ?? '-' }}</p>
                     <p class="mt-1 text-4xl font-bold text-white">{{ number_format($session->total_score ?? 0, 1) }}<span class="text-lg text-zinc-400">/100</span></p>
                 </div>
             </div>
@@ -47,6 +54,12 @@
                         <p class="text-sm font-semibold text-zinc-100">Q{{ $answer->question_index + 1 }} - {{ $answer->topic }}</p>
                         <p class="mt-1 text-sm text-zinc-400">{{ $answer->question_text }}</p>
                         <p class="mt-3 text-sm text-zinc-300"><span class="font-semibold text-zinc-100">Score:</span> {{ $answer->ai_score }}/100</p>
+                        <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                            <p class="text-xs text-zinc-400">Accuracy: <span class="font-semibold text-zinc-200">{{ $answer->feedback_json['breakdown']['accuracy'] ?? '-' }}</span></p>
+                            <p class="text-xs text-zinc-400">Depth: <span class="font-semibold text-zinc-200">{{ $answer->feedback_json['breakdown']['depth'] ?? '-' }}</span></p>
+                            <p class="text-xs text-zinc-400">Clarity: <span class="font-semibold text-zinc-200">{{ $answer->feedback_json['breakdown']['clarity'] ?? '-' }}</span></p>
+                            <p class="text-xs text-zinc-400">Problem-solving: <span class="font-semibold text-zinc-200">{{ $answer->feedback_json['breakdown']['problem_solving'] ?? '-' }}</span></p>
+                        </div>
                         <p class="mt-1 text-sm text-zinc-300"><span class="font-semibold text-zinc-100">Ideal answer:</span> {{ $answer->feedback_json['ideal_answer'] }}</p>
                     </article>
         @endforeach

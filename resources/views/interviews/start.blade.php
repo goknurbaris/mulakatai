@@ -30,9 +30,15 @@
                 </div>
 
                 <div class="p-8">
-                    <a href="{{ route('landing') }}" class="inline-flex items-center text-xs font-medium text-zinc-400 transition hover:text-zinc-200">
-                        ← Back to introduction
-                    </a>
+                    <div class="flex items-center justify-between gap-3">
+                        <a href="{{ route('interviews.history') }}" class="inline-flex items-center text-xs font-medium text-zinc-400 transition hover:text-zinc-200">
+                            ← Back to dashboard
+                        </a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="text-xs font-medium text-zinc-400 transition hover:text-zinc-200">Logout</button>
+                        </form>
+                    </div>
                     <h2 class="text-xl font-semibold text-white">Start your mock interview</h2>
                     <p class="mt-2 text-sm text-zinc-400">Choose your field and level to begin.</p>
 

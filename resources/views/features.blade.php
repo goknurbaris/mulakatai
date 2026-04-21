@@ -36,7 +36,7 @@
         </section>
 
         <div class="mt-10">
-            <a href="{{ route('interviews.start') }}" class="inline-flex items-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200">
+            <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200">
                 Start Interview App
             </a>
         </div>

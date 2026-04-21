@@ -23,14 +23,14 @@
                 </p>
 
                 <div class="mt-8 flex flex-wrap gap-3">
-                    <a href="{{ route('interviews.start') }}" class="inline-flex items-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200">
+                    <a href="{{ route('login') }}" class="inline-flex items-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200">
                         Start Interview App
                     </a>
                     <a href="{{ route('features') }}" class="inline-flex items-center rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800">
                         See Features
                     </a>
-                    <a href="{{ route('interviews.start') }}" class="inline-flex items-center rounded-xl border border-indigo-700/70 bg-indigo-600/20 px-5 py-3 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-600/30">
-                        Try Demo Session
+                    <a href="{{ route('register') }}" class="inline-flex items-center rounded-xl border border-indigo-700/70 bg-indigo-600/20 px-5 py-3 text-sm font-semibold text-indigo-200 transition hover:bg-indigo-600/30">
+                        Create Account
                     </a>
                 </div>
             </div>
