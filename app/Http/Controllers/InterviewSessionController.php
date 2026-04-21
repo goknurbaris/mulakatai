@@ -10,10 +10,39 @@ use App\Services\Interview\ResponseEvaluator;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class InterviewSessionController extends Controller
 {
+    public function history(Request $request, QuestionBank $questionBank): View
+    {
+        $validated = $request->validate([
+            'role' => ['nullable', 'string'],
+            'status' => ['nullable', Rule::in(['in_progress', 'completed'])],
+        ]);
+
+        $roleOptions = $questionBank->roleOptions();
+        $query = Auth::user()
+            ->interviewSessions()
+            ->latest();
+
+        if (filled($validated['role'] ?? null) && array_key_exists($validated['role'], $roleOptions)) {
+            $query->where('role', $validated['role']);
+        }
+
+        if (filled($validated['status'] ?? null)) {
+            $query->where('status', $validated['status']);
+        }
+
+        return view('interviews.history', [
+            'sessions' => $query->paginate(6)->withQueryString(),
+            'roleOptions' => $roleOptions,
+            'selectedRole' => $validated['role'] ?? '',
+            'selectedStatus' => $validated['status'] ?? '',
+        ]);
+    }
+
     public function start(QuestionBank $questionBank): View
     {
         return view('interviews.start', [
@@ -40,6 +69,7 @@ class InterviewSessionController extends Controller
         abort_if($questions === [], 422, 'No interview questions available for this role.');
 
         $session = InterviewSession::create([
+            'user_id' => Auth::id(),
             'role' => $validated['role'],
             'level' => $validated['level'],
             'focus_topic' => $focusValidated['focus_topic'],
@@ -53,6 +83,8 @@ class InterviewSessionController extends Controller
 
     public function show(InterviewSession $interviewSession): Response|View
     {
+        $this->assertOwnership($interviewSession);
+
         if ($interviewSession->status === 'completed') {
             return redirect()->route('interviews.result', $interviewSession);
         }
@@ -79,6 +111,8 @@ class InterviewSessionController extends Controller
         ResponseEvaluator $evaluator,
         LearningPlanBuilder $learningPlanBuilder,
     ): Response {
+        $this->assertOwnership($interviewSession);
+
         if ($interviewSession->status === 'completed') {
             return redirect()->route('interviews.result', $interviewSession);
         }
@@ -138,8 +172,10 @@ class InterviewSessionController extends Controller
         return redirect()->route('interviews.show', $interviewSession);
     }
 
-    public function result(InterviewSession $interviewSession): Response|View
+    public function result(InterviewSession $interviewSession, QuestionBank $questionBank): Response|View
     {
+        $this->assertOwnership($interviewSession);
+
         if ($interviewSession->status !== 'completed') {
             return redirect()->route('interviews.show', $interviewSession);
         }
@@ -148,10 +184,22 @@ class InterviewSessionController extends Controller
 
         return view('interviews.result', [
             'session' => $interviewSession,
+            'roleLabel' => $questionBank->roleLabel($interviewSession->role),
             'answers' => $answers,
             'summary' => $interviewSession->summary ?? ['strengths' => [], 'gaps' => []],
             'learningPlan' => $interviewSession->learningPlan?->plan_json ?? [],
         ]);
+    }
+
+    public function resume(InterviewSession $interviewSession): Response
+    {
+        $this->assertOwnership($interviewSession);
+
+        if ($interviewSession->status === 'completed') {
+            return redirect()->route('interviews.result', $interviewSession);
+        }
+
+        return redirect()->route('interviews.show', $interviewSession);
     }
 
     /**
@@ -183,5 +231,10 @@ class InterviewSessionController extends Controller
             'strengths' => $strengths !== [] ? $strengths : ['Steady participation throughout the interview'],
             'gaps' => $gaps !== [] ? $gaps : ['Push toward more concise and structured answers'],
         ];
+    }
+
+    private function assertOwnership(InterviewSession $interviewSession): void
+    {
+        abort_unless((int) $interviewSession->user_id === (int) Auth::id(), 403);
     }
 }
