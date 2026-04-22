@@ -202,6 +202,15 @@ class InterviewSessionController extends Controller
         return redirect()->route('interviews.show', $interviewSession);
     }
 
+    public function destroy(InterviewSession $interviewSession): Response
+    {
+        $this->assertOwnership($interviewSession);
+
+        $interviewSession->delete();
+
+        return redirect()->route('interviews.history');
+    }
+
     /**
      * @return array{strengths: array<int, string>, gaps: array<int, string>}
      */

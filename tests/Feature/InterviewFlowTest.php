@@ -173,4 +173,51 @@ class InterviewFlowTest extends TestCase
             ->assertDontSee('/resume')
             ->assertSee('Next');
     }
+
+    public function test_user_can_delete_own_session(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $session = InterviewSession::create([
+            'user_id' => $user->id,
+            'role' => 'frontend',
+            'level' => 'junior',
+            'focus_topic' => 'React State',
+            'status' => 'in_progress',
+            'current_question_index' => 0,
+            'questions_snapshot' => [
+                ['topic' => 'React State', 'difficulty' => 'easy', 'question' => 'Q1'],
+            ],
+        ]);
+
+        $this->delete(route('interviews.destroy', $session))
+            ->assertRedirect(route('interviews.history'));
+
+        $this->assertDatabaseMissing('interview_sessions', ['id' => $session->id]);
+    }
+
+    public function test_user_cannot_delete_another_users_session(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+
+        $session = InterviewSession::create([
+            'user_id' => $owner->id,
+            'role' => 'backend',
+            'level' => 'mid',
+            'focus_topic' => 'Caching',
+            'status' => 'in_progress',
+            'current_question_index' => 0,
+            'questions_snapshot' => [
+                ['topic' => 'Caching', 'difficulty' => 'medium', 'question' => 'Q1'],
+            ],
+        ]);
+
+        $this->actingAs($other)
+            ->delete(route('interviews.destroy', $session))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('interview_sessions', ['id' => $session->id]);
+    }
 }

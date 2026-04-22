@@ -64,6 +64,11 @@
                                 <span class="rounded-full border border-amber-800/60 bg-amber-900/30 px-3 py-1 text-xs text-amber-300">In progress</span>
                                 <a href="{{ route('interviews.resume', $session) }}" class="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800">Continue</a>
                             @endif
+                            <form method="POST" action="{{ route('interviews.destroy', $session) }}" onsubmit="return confirm('Delete this interview session?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="rounded-xl border border-rose-700/60 bg-rose-900/20 px-3 py-2 text-sm text-rose-200 hover:bg-rose-900/35">Delete</button>
+                            </form>
                         </div>
                     </div>
                 </article>
