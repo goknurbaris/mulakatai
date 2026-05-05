@@ -23,6 +23,9 @@
             <div class="mb-5 flex flex-wrap gap-2 text-xs">
                 <span class="rounded-full border border-zinc-700 bg-zinc-800/70 px-3 py-1 text-zinc-300">Topic: {{ $question['topic'] }}</span>
                 <span class="rounded-full border border-zinc-700 bg-zinc-800/70 px-3 py-1 text-zinc-300">Difficulty: {{ strtoupper($question['difficulty']) }}</span>
+                @if ($nextDifficultyHint !== null)
+                    <span class="rounded-full border border-indigo-700/70 bg-indigo-900/30 px-3 py-1 text-indigo-200">Adaptive target: {{ $nextDifficultyHint }}</span>
+                @endif
             </div>
 
             <h2 class="text-2xl font-semibold leading-snug text-white">{{ $question['question'] }}</h2>

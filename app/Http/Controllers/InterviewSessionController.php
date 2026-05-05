@@ -125,6 +125,18 @@ class InterviewSessionController extends Controller
         $currentIndex = $interviewSession->current_question_index;
         $questions = $interviewSession->questions_snapshot;
         $question = $questions[$currentIndex] ?? null;
+        $nextDifficultyHint = null;
+
+        if ($currentIndex > 0) {
+            $previousAnswer = $interviewSession->answers()
+                ->where('question_index', $currentIndex - 1)
+                ->first();
+            $difficultyHint = $previousAnswer?->feedback_json['next_question_difficulty'] ?? null;
+
+            if (is_string($difficultyHint) && in_array($difficultyHint, ['easy', 'medium', 'hard'], true)) {
+                $nextDifficultyHint = strtoupper($difficultyHint);
+            }
+        }
 
         if ($question === null) {
             return redirect()->route('interviews.result', $interviewSession);
@@ -135,6 +147,7 @@ class InterviewSessionController extends Controller
             'question' => $question,
             'questionNumber' => $currentIndex + 1,
             'totalQuestions' => count($questions),
+            'nextDifficultyHint' => $nextDifficultyHint,
         ]);
     }
 

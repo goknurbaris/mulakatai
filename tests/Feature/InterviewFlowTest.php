@@ -139,6 +139,27 @@ class InterviewFlowTest extends TestCase
         $this->get(route('interviews.history'))->assertRedirect(route('login'));
     }
 
+    public function test_question_page_displays_adaptive_target_hint_after_first_answer(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->post(route('interviews.store'), [
+            'role' => 'frontend',
+            'level' => 'junior',
+            'focus_topic' => 'React State',
+        ])->assertRedirect();
+
+        $session = InterviewSession::query()->firstOrFail();
+
+        $this->post(route('interviews.answer', $session), [
+            'answer' => 'First I identify state boundaries, then I explain trade-offs and give an example with reducers.',
+        ])->assertRedirect(route('interviews.show', $session));
+
+        $this->get(route('interviews.show', $session))
+            ->assertOk()
+            ->assertSee('Adaptive target:');
+    }
+
     public function test_user_can_see_history_and_resume_in_progress_session(): void
     {
         $user = User::factory()->create();
