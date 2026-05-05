@@ -20,6 +20,7 @@ class InterviewSessionController extends Controller
         $validated = $request->validate([
             'role' => ['nullable', 'string'],
             'status' => ['nullable', Rule::in(['in_progress', 'completed'])],
+            'level' => ['nullable', Rule::in(['junior', 'mid'])],
         ]);
 
         $roleOptions = $questionBank->roleOptions();
@@ -42,11 +43,16 @@ class InterviewSessionController extends Controller
             $query->where('status', $validated['status']);
         }
 
+        if (filled($validated['level'] ?? null)) {
+            $query->where('level', $validated['level']);
+        }
+
         return view('interviews.history', [
             'sessions' => $query->paginate(6)->withQueryString(),
             'roleOptions' => $roleOptions,
             'selectedRole' => $validated['role'] ?? '',
             'selectedStatus' => $validated['status'] ?? '',
+            'selectedLevel' => $validated['level'] ?? '',
             'stats' => [
                 'total_sessions' => $totalSessions,
                 'completed_sessions' => $completedCount,

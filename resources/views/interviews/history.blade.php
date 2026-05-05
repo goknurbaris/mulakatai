@@ -44,7 +44,7 @@
             </div>
 
             <form method="GET" action="{{ route('interviews.history') }}" class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
-                <div class="grid gap-3 md:grid-cols-4">
+                <div class="grid gap-3 md:grid-cols-5">
                     <div>
                         <label for="role" class="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">Role</label>
                         <select id="role" name="role" class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-indigo-500">
@@ -52,6 +52,14 @@
                             @foreach ($roleOptions as $roleValue => $roleLabel)
                                 <option value="{{ $roleValue }}" @selected($selectedRole === $roleValue)>{{ $roleLabel }}</option>
                             @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="level" class="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">Level</label>
+                        <select id="level" name="level" class="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-indigo-500">
+                            <option value="">All levels</option>
+                            <option value="junior" @selected($selectedLevel === 'junior')>Junior</option>
+                            <option value="mid" @selected($selectedLevel === 'mid')>Mid</option>
                         </select>
                     </div>
                     <div>

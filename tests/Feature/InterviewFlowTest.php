@@ -195,7 +195,7 @@ class InterviewFlowTest extends TestCase
             InterviewSession::create([
                 'user_id' => $user->id,
                 'role' => 'backend',
-                'level' => 'mid',
+                'level' => $index <= 4 ? 'junior' : 'mid',
                 'focus_topic' => 'Caching',
                 'status' => $index <= 7 ? 'completed' : 'in_progress',
                 'current_question_index' => 0,
@@ -208,14 +208,16 @@ class InterviewFlowTest extends TestCase
         $response = $this->get(route('interviews.history', [
             'role' => 'backend',
             'status' => 'completed',
+            'level' => 'junior',
         ]));
 
         $response->assertOk()
             ->assertSee('Apply filters')
+            ->assertSee('All levels')
             ->assertSee('Completion Rate')
             ->assertSee('Completed')
             ->assertDontSee('/resume')
-            ->assertSee('Next');
+            ->assertDontSee('Next');
     }
 
     public function test_user_can_delete_own_session(): void
