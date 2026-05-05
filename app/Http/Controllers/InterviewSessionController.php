@@ -21,9 +21,16 @@ class InterviewSessionController extends Controller
             'role' => ['nullable', 'string'],
             'status' => ['nullable', Rule::in(['in_progress', 'completed'])],
             'level' => ['nullable', Rule::in(['junior', 'mid'])],
+            'topic' => ['nullable', 'string'],
         ]);
 
         $roleOptions = $questionBank->roleOptions();
+        $topicOptions = collect($questionBank->topicOptionsByRole())
+            ->flatten()
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
         $sessionsQuery = Auth::user()->interviewSessions();
         $query = (clone $sessionsQuery)->latest();
         $completedSessions = (clone $sessionsQuery)->where('status', 'completed');
@@ -47,12 +54,18 @@ class InterviewSessionController extends Controller
             $query->where('level', $validated['level']);
         }
 
+        if (filled($validated['topic'] ?? null)) {
+            $query->where('focus_topic', $validated['topic']);
+        }
+
         return view('interviews.history', [
             'sessions' => $query->paginate(6)->withQueryString(),
             'roleOptions' => $roleOptions,
+            'topicOptions' => $topicOptions,
             'selectedRole' => $validated['role'] ?? '',
             'selectedStatus' => $validated['status'] ?? '',
             'selectedLevel' => $validated['level'] ?? '',
+            'selectedTopic' => $validated['topic'] ?? '',
             'stats' => [
                 'total_sessions' => $totalSessions,
                 'completed_sessions' => $completedCount,

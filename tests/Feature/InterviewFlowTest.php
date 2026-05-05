@@ -196,7 +196,7 @@ class InterviewFlowTest extends TestCase
                 'user_id' => $user->id,
                 'role' => 'backend',
                 'level' => $index <= 4 ? 'junior' : 'mid',
-                'focus_topic' => 'Caching',
+                'focus_topic' => $index <= 4 ? 'Caching' : 'Queues',
                 'status' => $index <= 7 ? 'completed' : 'in_progress',
                 'current_question_index' => 0,
                 'questions_snapshot' => [
@@ -209,6 +209,7 @@ class InterviewFlowTest extends TestCase
             'role' => 'backend',
             'status' => 'completed',
             'level' => 'junior',
+            'topic' => 'Caching',
         ]));
 
         $response->assertOk()
