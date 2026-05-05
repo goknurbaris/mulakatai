@@ -23,6 +23,26 @@
         </div>
 
         <section class="mt-6 space-y-3">
+            <div class="grid gap-3 md:grid-cols-4">
+                <article class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+                    <p class="text-xs uppercase tracking-wide text-zinc-400">Total Sessions</p>
+                    <p class="mt-2 text-2xl font-semibold text-white">{{ $stats['total_sessions'] }}</p>
+                </article>
+                <article class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+                    <p class="text-xs uppercase tracking-wide text-zinc-400">Completed</p>
+                    <p class="mt-2 text-2xl font-semibold text-emerald-300">{{ $stats['completed_sessions'] }}</p>
+                </article>
+                <article class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+                    <p class="text-xs uppercase tracking-wide text-zinc-400">In Progress</p>
+                    <p class="mt-2 text-2xl font-semibold text-amber-300">{{ $stats['in_progress_sessions'] }}</p>
+                </article>
+                <article class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+                    <p class="text-xs uppercase tracking-wide text-zinc-400">Completion Rate</p>
+                    <p class="mt-2 text-2xl font-semibold text-indigo-300">{{ $stats['completion_rate'] }}%</p>
+                    <p class="mt-1 text-xs text-zinc-500">Avg completed score: {{ number_format($stats['average_completed_score'], 1) }}</p>
+                </article>
+            </div>
+
             <form method="GET" action="{{ route('interviews.history') }}" class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
                 <div class="grid gap-3 md:grid-cols-4">
                     <div>

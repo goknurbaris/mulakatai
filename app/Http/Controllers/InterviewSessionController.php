@@ -23,9 +23,16 @@ class InterviewSessionController extends Controller
         ]);
 
         $roleOptions = $questionBank->roleOptions();
-        $query = Auth::user()
-            ->interviewSessions()
-            ->latest();
+        $sessionsQuery = Auth::user()->interviewSessions();
+        $query = (clone $sessionsQuery)->latest();
+        $completedSessions = (clone $sessionsQuery)->where('status', 'completed');
+        $totalSessions = (clone $sessionsQuery)->count();
+        $completedCount = (clone $completedSessions)->count();
+        $inProgressCount = max(0, $totalSessions - $completedCount);
+        $averageCompletedScore = (float) ((clone $completedSessions)->avg('total_score') ?? 0);
+        $completionRate = $totalSessions > 0
+            ? (int) round(($completedCount / $totalSessions) * 100)
+            : 0;
 
         if (filled($validated['role'] ?? null) && array_key_exists($validated['role'], $roleOptions)) {
             $query->where('role', $validated['role']);
@@ -40,6 +47,13 @@ class InterviewSessionController extends Controller
             'roleOptions' => $roleOptions,
             'selectedRole' => $validated['role'] ?? '',
             'selectedStatus' => $validated['status'] ?? '',
+            'stats' => [
+                'total_sessions' => $totalSessions,
+                'completed_sessions' => $completedCount,
+                'in_progress_sessions' => $inProgressCount,
+                'average_completed_score' => round($averageCompletedScore, 1),
+                'completion_rate' => $completionRate,
+            ],
         ]);
     }
 
@@ -165,8 +179,15 @@ class InterviewSessionController extends Controller
             return redirect()->route('interviews.result', $interviewSession);
         }
 
+        $questions = $this->applyAdaptiveDifficulty(
+            $questions,
+            $nextIndex,
+            (string) ($evaluation['next_question_difficulty'] ?? '')
+        );
+
         $interviewSession->update([
             'current_question_index' => $nextIndex,
+            'questions_snapshot' => $questions,
         ]);
 
         return redirect()->route('interviews.show', $interviewSession);
@@ -245,5 +266,55 @@ class InterviewSessionController extends Controller
     private function assertOwnership(InterviewSession $interviewSession): void
     {
         abort_unless((int) $interviewSession->user_id === (int) Auth::id(), 403);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $questions
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyAdaptiveDifficulty(array $questions, int $startIndex, string $targetDifficulty): array
+    {
+        if (! in_array($targetDifficulty, ['easy', 'medium', 'hard'], true)) {
+            return $questions;
+        }
+
+        $completedQuestions = array_slice($questions, 0, $startIndex);
+        $remainingQuestions = array_values(array_slice($questions, $startIndex));
+
+        if ($remainingQuestions === []) {
+            return $questions;
+        }
+
+        $difficultyRank = ['easy' => 0, 'medium' => 1, 'hard' => 2];
+        $targetRank = $difficultyRank[$targetDifficulty];
+
+        $scoredQuestions = array_map(
+            static function (array $question, int $position) use ($difficultyRank, $targetRank): array {
+                $difficulty = is_string($question['difficulty'] ?? null)
+                    ? strtolower((string) $question['difficulty'])
+                    : 'medium';
+                $rank = $difficultyRank[$difficulty] ?? 1;
+
+                return [
+                    'question' => $question,
+                    'distance' => abs($rank - $targetRank),
+                    'position' => $position,
+                ];
+            },
+            $remainingQuestions,
+            array_keys($remainingQuestions)
+        );
+
+        usort(
+            $scoredQuestions,
+            static fn (array $left, array $right): int => [$left['distance'], $left['position']] <=> [$right['distance'], $right['position']]
+        );
+
+        $reorderedRemaining = array_map(
+            static fn (array $item): array => $item['question'],
+            $scoredQuestions
+        );
+
+        return array_values(array_merge($completedQuestions, $reorderedRemaining));
     }
 }

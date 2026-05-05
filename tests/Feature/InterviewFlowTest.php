@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\InterviewSession;
 use App\Models\User;
+use App\Services\Interview\ResponseEvaluator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -90,6 +91,48 @@ class InterviewFlowTest extends TestCase
         $this->assertSame('API Design', $session->questions_snapshot[0]['topic']);
     }
 
+    public function test_next_question_is_reordered_by_adaptive_difficulty_signal(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $this->app->instance(ResponseEvaluator::class, new class extends ResponseEvaluator
+        {
+            public function evaluate(array $question, string $answer): array
+            {
+                return [
+                    'score' => 91,
+                    'strengths' => ['Strong answer'],
+                    'gaps' => ['Minor detail'],
+                    'ideal_answer' => (string) ($question['ideal_answer'] ?? ''),
+                    'next_question_difficulty' => 'hard',
+                    'breakdown' => [
+                        'accuracy' => 92,
+                        'depth' => 90,
+                        'clarity' => 90,
+                        'problem_solving' => 92,
+                    ],
+                    'source' => 'deterministic_fallback',
+                ];
+            }
+        });
+
+        $this->post(route('interviews.store'), [
+            'role' => 'backend',
+            'level' => 'mid',
+            'focus_topic' => 'Eloquent',
+        ])->assertRedirect();
+
+        $session = InterviewSession::query()->firstOrFail();
+
+        $this->post(route('interviews.answer', $session), [
+            'answer' => 'I would split orchestration from business logic, keep validation explicit, and discuss trade-offs clearly.',
+        ])->assertRedirect(route('interviews.show', $session));
+
+        $session->refresh();
+
+        $this->assertSame('hard', $session->questions_snapshot[1]['difficulty']);
+        $this->assertSame('Architecture', $session->questions_snapshot[1]['topic']);
+    }
+
     public function test_guest_is_redirected_to_login_for_app_routes(): void
     {
         $this->get(route('interviews.start'))->assertRedirect(route('login'));
@@ -169,6 +212,7 @@ class InterviewFlowTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Apply filters')
+            ->assertSee('Completion Rate')
             ->assertSee('Completed')
             ->assertDontSee('/resume')
             ->assertSee('Next');
