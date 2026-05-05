@@ -18,6 +18,9 @@ AI-powered technical interview simulator built with Laravel.
   - Top improvement areas
   - Per-question breakdown
 - Auto-generated 7-day learning plan
+- Adaptive difficulty ordering after each answer
+- Dashboard analytics cards (total sessions, completion rate, average score)
+- Dashboard filters: role, level, status, focus topic
 
 ## Tech
 
