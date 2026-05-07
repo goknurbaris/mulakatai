@@ -23,5 +23,6 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/interviews/{interviewSession}', [InterviewSessionController::class, 'destroy'])->name('interviews.destroy');
     Route::get('/interviews/{interviewSession}', [InterviewSessionController::class, 'show'])->name('interviews.show');
     Route::post('/interviews/{interviewSession}/answers', [InterviewSessionController::class, 'submitAnswer'])->name('interviews.answer');
+    Route::patch('/interviews/{interviewSession}/learning-plan/{dayIndex}', [InterviewSessionController::class, 'toggleLearningPlanItem'])->name('interviews.learning-plan.toggle');
     Route::get('/interviews/{interviewSession}/result', [InterviewSessionController::class, 'result'])->name('interviews.result');
 });

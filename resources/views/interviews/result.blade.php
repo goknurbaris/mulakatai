@@ -68,11 +68,29 @@
 
         <section class="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6">
             <h2 class="text-xl font-semibold text-white">7-day learning plan</h2>
+            @php
+                $completedPlanItems = collect($learningPlan)->filter(fn (array $item): bool => (bool) ($item['completed'] ?? false))->count();
+                $totalPlanItems = count($learningPlan);
+                $planProgress = $totalPlanItems > 0 ? (int) round(($completedPlanItems / $totalPlanItems) * 100) : 0;
+            @endphp
+            <div class="mt-3">
+                <p class="text-sm text-zinc-400">Progress: <span class="font-semibold text-zinc-200">{{ $completedPlanItems }}/{{ $totalPlanItems }}</span> ({{ $planProgress }}%)</p>
+                <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                    <div class="h-full rounded-full bg-emerald-500" style="width: {{ $planProgress }}%"></div>
+                </div>
+            </div>
             <div class="mt-4 grid gap-3 md:grid-cols-2">
-        @foreach ($learningPlan as $item)
-                    <article class="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
+        @foreach ($learningPlan as $index => $item)
+                    <article class="rounded-xl border {{ $item['completed'] ? 'border-emerald-700/60 bg-emerald-900/10' : 'border-zinc-800 bg-zinc-950/70' }} p-4">
                         <p class="text-sm font-semibold text-zinc-100">{{ $item['day'] }} - {{ $item['focus'] }}</p>
                         <p class="mt-1 text-sm text-zinc-400">{{ $item['task'] }}</p>
+                        <form method="POST" action="{{ route('interviews.learning-plan.toggle', [$session, $index]) }}" class="mt-3">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ $item['completed'] ? 'border-emerald-700/60 bg-emerald-900/30 text-emerald-200 hover:bg-emerald-900/45' : 'border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800' }}">
+                                {{ $item['completed'] ? 'Mark as pending' : 'Mark as done' }}
+                            </button>
+                        </form>
                     </article>
         @endforeach
             </div>

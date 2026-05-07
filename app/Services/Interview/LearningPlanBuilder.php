@@ -30,6 +30,7 @@ class LearningPlanBuilder
                 'task' => $day % 2 === 0
                     ? 'Solve 3 targeted interview questions and self-review with rubric.'
                     : 'Study the topic for 45 minutes and write one ideal interview answer.',
+                'completed' => false,
             ];
         }
 

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ReevaluateInterviewAnswerWithAi;
 use App\Models\InterviewAnswer;
 use App\Models\InterviewSession;
 use App\Services\Interview\LearningPlanBuilder;
 use App\Services\Interview\QuestionBank;
 use App\Services\Interview\ResponseEvaluator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -41,6 +43,39 @@ class InterviewSessionController extends Controller
         $completionRate = $totalSessions > 0
             ? (int) round(($completedCount / $totalSessions) * 100)
             : 0;
+        $completedSessionsForAnalytics = (clone $completedSessions)
+            ->whereNotNull('total_score')
+            ->orderBy('created_at')
+            ->get(['role', 'focus_topic', 'total_score', 'created_at']);
+        $trend30 = $this->buildDailyTrend($completedSessionsForAnalytics->all(), 30);
+        $trend7 = array_slice($trend30, -7);
+        $rolePerformance = $completedSessionsForAnalytics
+            ->groupBy('role')
+            ->map(function ($group, $role) use ($roleOptions): array {
+                return [
+                    'key' => $role,
+                    'label' => $roleOptions[$role] ?? ucfirst((string) $role),
+                    'count' => $group->count(),
+                    'avg_score' => round((float) $group->avg('total_score'), 1),
+                ];
+            })
+            ->sortByDesc('avg_score')
+            ->values()
+            ->all();
+        $topicPerformance = $completedSessionsForAnalytics
+            ->filter(static fn ($session): bool => filled($session->focus_topic))
+            ->groupBy('focus_topic')
+            ->map(function ($group, $topic): array {
+                return [
+                    'topic' => (string) $topic,
+                    'count' => $group->count(),
+                    'avg_score' => round((float) $group->avg('total_score'), 1),
+                ];
+            })
+            ->sortByDesc('count')
+            ->take(6)
+            ->values()
+            ->all();
 
         if (filled($validated['role'] ?? null) && array_key_exists($validated['role'], $roleOptions)) {
             $query->where('role', $validated['role']);
@@ -72,6 +107,12 @@ class InterviewSessionController extends Controller
                 'in_progress_sessions' => $inProgressCount,
                 'average_completed_score' => round($averageCompletedScore, 1),
                 'completion_rate' => $completionRate,
+            ],
+            'analytics' => [
+                'trend_7_days' => $trend7,
+                'trend_30_days' => $trend30,
+                'role_performance' => $rolePerformance,
+                'topic_performance' => $topicPerformance,
             ],
         ]);
     }
@@ -173,9 +214,14 @@ class InterviewSessionController extends Controller
 
         abort_if($question === null, 422, 'Interview question could not be loaded.');
 
-        $evaluation = $evaluator->evaluate($question, $validated['answer']);
+        $shouldQueueAiEvaluation = $this->shouldQueueAiEvaluation($interviewSession, $question);
+        $evaluation = $evaluator->evaluate(
+            $question,
+            $validated['answer'],
+            false
+        );
 
-        InterviewAnswer::updateOrCreate(
+        $answer = InterviewAnswer::updateOrCreate(
             [
                 'interview_session_id' => $interviewSession->id,
                 'question_index' => $currentIndex,
@@ -188,6 +234,14 @@ class InterviewSessionController extends Controller
                 'feedback_json' => $evaluation,
             ]
         );
+
+        if ($shouldQueueAiEvaluation) {
+            ReevaluateInterviewAnswerWithAi::dispatch(
+                (int) $answer->id,
+                $question,
+                $validated['answer']
+            );
+        }
 
         $nextIndex = $currentIndex + 1;
         $totalQuestions = count($questions);
@@ -234,13 +288,14 @@ class InterviewSessionController extends Controller
         }
 
         $answers = $interviewSession->answers()->orderBy('question_index')->get();
+        $learningPlan = $this->normalizedLearningPlan($interviewSession->learningPlan?->plan_json ?? []);
 
         return view('interviews.result', [
             'session' => $interviewSession,
             'roleLabel' => $questionBank->roleLabel($interviewSession->role),
             'answers' => $answers,
             'summary' => $interviewSession->summary ?? ['strengths' => [], 'gaps' => []],
-            'learningPlan' => $interviewSession->learningPlan?->plan_json ?? [],
+            'learningPlan' => $learningPlan,
         ]);
     }
 
@@ -262,6 +317,26 @@ class InterviewSessionController extends Controller
         $interviewSession->delete();
 
         return redirect()->route('interviews.history');
+    }
+
+    public function toggleLearningPlanItem(InterviewSession $interviewSession, int $dayIndex): Response
+    {
+        $this->assertOwnership($interviewSession);
+
+        if ($interviewSession->status !== 'completed') {
+            return redirect()->route('interviews.show', $interviewSession);
+        }
+
+        $learningPlan = $interviewSession->learningPlan;
+        abort_if($learningPlan === null, 404);
+
+        $plan = $this->normalizedLearningPlan($learningPlan->plan_json ?? []);
+        abort_if(! isset($plan[$dayIndex]), 404);
+
+        $plan[$dayIndex]['completed'] = ! $plan[$dayIndex]['completed'];
+        $learningPlan->update(['plan_json' => array_values($plan)]);
+
+        return redirect()->route('interviews.result', $interviewSession);
     }
 
     /**
@@ -298,6 +373,139 @@ class InterviewSessionController extends Controller
     private function assertOwnership(InterviewSession $interviewSession): void
     {
         abort_unless((int) $interviewSession->user_id === (int) Auth::id(), 403);
+    }
+
+    /**
+     * @param  array<string, mixed>  $question
+     */
+    private function shouldQueueAiEvaluation(InterviewSession $interviewSession, array $question): bool
+    {
+        if (! $this->aiScoringConfigured()) {
+            return false;
+        }
+
+        $forcedLevels = $this->parseCsvConfig((string) config('services.interview_ai.staged_force_levels', 'mid'));
+        if (in_array(strtolower($interviewSession->level), $forcedLevels, true)) {
+            return true;
+        }
+
+        $forcedDifficulties = $this->parseCsvConfig((string) config('services.interview_ai.staged_force_difficulties', 'hard'));
+        $questionDifficulty = is_string($question['difficulty'] ?? null)
+            ? strtolower((string) $question['difficulty'])
+            : '';
+        if ($questionDifficulty !== '' && in_array($questionDifficulty, $forcedDifficulties, true)) {
+            return true;
+        }
+
+        $minAnswerCount = max(1, (int) config('services.interview_ai.staged_min_answer_count', 3));
+        $recentScores = $interviewSession->answers()
+            ->orderByDesc('question_index')
+            ->limit($minAnswerCount)
+            ->pluck('ai_score');
+
+        if ($recentScores->count() < $minAnswerCount) {
+            return false;
+        }
+
+        $minScore = (float) config('services.interview_ai.staged_min_score', 70);
+        $recentAverage = (float) $recentScores->avg();
+
+        return $recentAverage >= $minScore;
+    }
+
+    private function aiScoringConfigured(): bool
+    {
+        return (bool) config('services.interview_ai.enabled')
+            && filled(config('services.interview_ai.api_key'))
+            && filled(config('services.interview_ai.base_url'))
+            && filled(config('services.interview_ai.model'))
+            && filled(config('services.interview_ai.chat_endpoint'));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function parseCsvConfig(string $value): array
+    {
+        return array_values(array_filter(
+            array_map(static fn (string $item): string => strtolower(trim($item)), explode(',', $value)),
+            static fn (string $item): bool => $item !== ''
+        ));
+    }
+
+    /**
+     * @param  array<int, mixed>  $plan
+     * @return array<int, array{day: string, focus: string, task: string, completed: bool}>
+     */
+    private function normalizedLearningPlan(array $plan): array
+    {
+        $normalized = [];
+
+        foreach ($plan as $index => $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $day = is_string($item['day'] ?? null) && trim($item['day']) !== ''
+                ? trim($item['day'])
+                : 'Day '.($index + 1);
+            $focus = is_string($item['focus'] ?? null) ? trim($item['focus']) : '';
+            $task = is_string($item['task'] ?? null) ? trim($item['task']) : '';
+
+            if ($focus === '' || $task === '') {
+                continue;
+            }
+
+            $normalized[] = [
+                'day' => $day,
+                'focus' => $focus,
+                'task' => $task,
+                'completed' => (bool) ($item['completed'] ?? false),
+            ];
+        }
+
+        return array_values($normalized);
+    }
+
+    /**
+     * @param  array<int, object>  $sessions
+     * @return array<int, array<string, int|float|string|null>>
+     */
+    private function buildDailyTrend(array $sessions, int $days): array
+    {
+        $startDate = now()->startOfDay()->subDays($days - 1);
+        $dailyBuckets = [];
+
+        for ($offset = 0; $offset < $days; $offset++) {
+            $dateKey = $startDate->copy()->addDays($offset)->format('Y-m-d');
+            $dailyBuckets[$dateKey] = ['sum' => 0.0, 'count' => 0];
+        }
+
+        foreach ($sessions as $session) {
+            if (! $session->created_at instanceof Carbon) {
+                continue;
+            }
+
+            $dateKey = $session->created_at->format('Y-m-d');
+            if (! array_key_exists($dateKey, $dailyBuckets)) {
+                continue;
+            }
+
+            $dailyBuckets[$dateKey]['sum'] += (float) $session->total_score;
+            $dailyBuckets[$dateKey]['count']++;
+        }
+
+        $trend = [];
+        foreach ($dailyBuckets as $dateKey => $bucket) {
+            $trend[] = [
+                'date' => $dateKey,
+                'label' => Carbon::createFromFormat('Y-m-d', $dateKey)->format('m/d'),
+                'avg_score' => $bucket['count'] > 0 ? round($bucket['sum'] / $bucket['count'], 1) : null,
+                'session_count' => $bucket['count'],
+            ];
+        }
+
+        return $trend;
     }
 
     /**

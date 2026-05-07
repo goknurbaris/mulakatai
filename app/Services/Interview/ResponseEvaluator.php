@@ -15,9 +15,9 @@ class ResponseEvaluator
      * @param  array<string, mixed>  $question
      * @return array<string, mixed>
      */
-    public function evaluate(array $question, string $answer): array
+    public function evaluate(array $question, string $answer, bool $allowAi = true): array
     {
-        if (! $this->aiScoringEnabled()) {
+        if (! $allowAi || ! $this->aiScoringEnabled()) {
             return $this->evaluateDeterministically($question, $answer);
         }
 

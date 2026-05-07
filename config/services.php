@@ -44,6 +44,10 @@ return [
         'timeout' => env('INTERVIEW_AI_TIMEOUT', 25),
         'retries' => env('INTERVIEW_AI_RETRIES', 2),
         'retry_sleep_ms' => env('INTERVIEW_AI_RETRY_SLEEP_MS', 350),
+        'staged_min_score' => env('INTERVIEW_AI_STAGED_MIN_SCORE', 70),
+        'staged_min_answer_count' => env('INTERVIEW_AI_STAGED_MIN_ANSWER_COUNT', 3),
+        'staged_force_levels' => env('INTERVIEW_AI_STAGED_FORCE_LEVELS', 'mid'),
+        'staged_force_difficulties' => env('INTERVIEW_AI_STAGED_FORCE_DIFFICULTIES', 'hard'),
     ],
 
 ];

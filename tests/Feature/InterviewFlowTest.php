@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ReevaluateInterviewAnswerWithAi;
 use App\Models\InterviewSession;
+use App\Models\LearningPlan;
+use App\Models\InterviewAnswer;
 use App\Models\User;
 use App\Services\Interview\ResponseEvaluator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class InterviewFlowTest extends TestCase
@@ -96,7 +100,7 @@ class InterviewFlowTest extends TestCase
         $this->actingAs(User::factory()->create());
         $this->app->instance(ResponseEvaluator::class, new class extends ResponseEvaluator
         {
-            public function evaluate(array $question, string $answer): array
+            public function evaluate(array $question, string $answer, bool $allowAi = true): array
             {
                 return [
                     'score' => 91,
@@ -160,6 +164,114 @@ class InterviewFlowTest extends TestCase
             ->assertSee('Adaptive target:');
     }
 
+    public function test_junior_session_starts_with_deterministic_scoring_before_threshold(): void
+    {
+        $this->actingAs(User::factory()->create());
+        config([
+            'services.interview_ai.enabled' => true,
+            'services.interview_ai.base_url' => 'https://example.test',
+            'services.interview_ai.chat_endpoint' => '/v1/chat/completions',
+            'services.interview_ai.model' => 'test-model',
+            'services.interview_ai.api_key' => 'test-key',
+        ]);
+        Queue::fake();
+
+        $this->app->instance(ResponseEvaluator::class, new class extends ResponseEvaluator
+        {
+            public function evaluate(array $question, string $answer, bool $allowAi = true): array
+            {
+                return [
+                    'score' => 75,
+                    'strengths' => ['Strong answer'],
+                    'gaps' => ['Minor detail'],
+                    'ideal_answer' => (string) ($question['ideal_answer'] ?? ''),
+                    'next_question_difficulty' => 'medium',
+                    'breakdown' => [
+                        'accuracy' => 76,
+                        'depth' => 74,
+                        'clarity' => 75,
+                        'problem_solving' => 75,
+                    ],
+                    'source' => $allowAi ? 'ai' : 'deterministic_fallback',
+                ];
+            }
+        });
+
+        $this->post(route('interviews.store'), [
+            'role' => 'frontend',
+            'level' => 'junior',
+            'focus_topic' => 'React State',
+        ])->assertRedirect();
+
+        $session = InterviewSession::query()->firstOrFail();
+
+        $this->post(route('interviews.answer', $session), [
+            'answer' => 'First I define boundaries, then I explain trade-offs and provide examples to support the decision.',
+        ])->assertRedirect(route('interviews.show', $session));
+
+        $firstAnswer = InterviewAnswer::query()
+            ->where('interview_session_id', $session->id)
+            ->where('question_index', 0)
+            ->firstOrFail();
+
+        $this->assertSame('deterministic_fallback', $firstAnswer->feedback_json['source'] ?? null);
+        Queue::assertNotPushed(ReevaluateInterviewAnswerWithAi::class);
+    }
+
+    public function test_mid_level_session_queues_ai_reevaluation_when_enabled(): void
+    {
+        $this->actingAs(User::factory()->create());
+        config([
+            'services.interview_ai.enabled' => true,
+            'services.interview_ai.base_url' => 'https://example.test',
+            'services.interview_ai.chat_endpoint' => '/v1/chat/completions',
+            'services.interview_ai.model' => 'test-model',
+            'services.interview_ai.api_key' => 'test-key',
+        ]);
+        Queue::fake();
+
+        $this->app->instance(ResponseEvaluator::class, new class extends ResponseEvaluator
+        {
+            public function evaluate(array $question, string $answer, bool $allowAi = true): array
+            {
+                return [
+                    'score' => 85,
+                    'strengths' => ['Strong answer'],
+                    'gaps' => ['Minor detail'],
+                    'ideal_answer' => (string) ($question['ideal_answer'] ?? ''),
+                    'next_question_difficulty' => 'hard',
+                    'breakdown' => [
+                        'accuracy' => 86,
+                        'depth' => 84,
+                        'clarity' => 85,
+                        'problem_solving' => 85,
+                    ],
+                    'source' => $allowAi ? 'ai' : 'deterministic_fallback',
+                ];
+            }
+        });
+
+        $this->post(route('interviews.store'), [
+            'role' => 'backend',
+            'level' => 'mid',
+            'focus_topic' => 'Eloquent',
+        ])->assertRedirect();
+
+        $session = InterviewSession::query()->firstOrFail();
+
+        $this->post(route('interviews.answer', $session), [
+            'answer' => 'I separate business logic from controllers, validate strongly, and evaluate trade-offs with alternatives.',
+        ])->assertRedirect(route('interviews.show', $session));
+
+        $firstAnswer = InterviewAnswer::query()
+            ->where('interview_session_id', $session->id)
+            ->where('question_index', 0)
+            ->firstOrFail();
+
+        $this->assertSame('deterministic_fallback', $firstAnswer->feedback_json['source'] ?? null);
+        Queue::assertPushed(ReevaluateInterviewAnswerWithAi::class);
+    }
+
     public function test_user_can_see_history_and_resume_in_progress_session(): void
     {
         $user = User::factory()->create();
@@ -207,6 +319,44 @@ class InterviewFlowTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_user_can_toggle_learning_plan_item_completion(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $session = InterviewSession::create([
+            'user_id' => $user->id,
+            'role' => 'backend',
+            'level' => 'mid',
+            'focus_topic' => 'Caching',
+            'status' => 'completed',
+            'current_question_index' => 10,
+            'total_score' => 78,
+            'questions_snapshot' => [
+                ['topic' => 'Caching', 'difficulty' => 'medium', 'question' => 'Q1'],
+            ],
+        ]);
+
+        LearningPlan::create([
+            'interview_session_id' => $session->id,
+            'plan_json' => [
+                ['day' => 'Day 1', 'focus' => 'Caching', 'task' => 'Task 1', 'completed' => false],
+                ['day' => 'Day 2', 'focus' => 'Queues', 'task' => 'Task 2', 'completed' => false],
+            ],
+        ]);
+
+        $this->patch(route('interviews.learning-plan.toggle', [$session, 0]))
+            ->assertRedirect(route('interviews.result', $session));
+
+        $session->refresh();
+        $this->assertTrue((bool) ($session->learningPlan?->plan_json[0]['completed'] ?? false));
+
+        $this->get(route('interviews.result', $session))
+            ->assertOk()
+            ->assertSee('Progress:')
+            ->assertSee('Mark as pending');
+    }
+
     public function test_history_supports_filters_and_pagination(): void
     {
         $user = User::factory()->create();
@@ -237,6 +387,9 @@ class InterviewFlowTest extends TestCase
             ->assertSee('Apply filters')
             ->assertSee('All levels')
             ->assertSee('Completion Rate')
+            ->assertSee('Score Trend (7 Days)')
+            ->assertSee('Role Performance')
+            ->assertSee('Top Focus Topics')
             ->assertSee('Completed')
             ->assertDontSee('/resume')
             ->assertDontSee('Next');
@@ -287,5 +440,35 @@ class InterviewFlowTest extends TestCase
             ->assertForbidden();
 
         $this->assertDatabaseHas('interview_sessions', ['id' => $session->id]);
+    }
+
+    public function test_user_cannot_toggle_another_users_learning_plan_item(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+
+        $session = InterviewSession::create([
+            'user_id' => $owner->id,
+            'role' => 'frontend',
+            'level' => 'junior',
+            'focus_topic' => 'React State',
+            'status' => 'completed',
+            'current_question_index' => 10,
+            'total_score' => 81,
+            'questions_snapshot' => [
+                ['topic' => 'React State', 'difficulty' => 'easy', 'question' => 'Q1'],
+            ],
+        ]);
+
+        LearningPlan::create([
+            'interview_session_id' => $session->id,
+            'plan_json' => [
+                ['day' => 'Day 1', 'focus' => 'React State', 'task' => 'Task 1', 'completed' => false],
+            ],
+        ]);
+
+        $this->actingAs($other)
+            ->patch(route('interviews.learning-plan.toggle', [$session, 0]))
+            ->assertForbidden();
     }
 }

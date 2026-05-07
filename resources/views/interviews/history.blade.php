@@ -43,6 +43,79 @@
                 </article>
             </div>
 
+            <div class="grid gap-3 lg:grid-cols-2">
+                <article class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+                    <h2 class="text-sm font-semibold text-white">Score Trend (7 Days)</h2>
+                    <div class="mt-3 space-y-2">
+                        @php
+                            $max7DayScore = collect($analytics['trend_7_days'])->pluck('avg_score')->filter()->max() ?? 100;
+                        @endphp
+                        @foreach ($analytics['trend_7_days'] as $point)
+                            <div>
+                                <div class="mb-1 flex items-center justify-between text-xs text-zinc-400">
+                                    <span>{{ $point['label'] }}</span>
+                                    <span>
+                                        {{ $point['avg_score'] !== null ? number_format((float) $point['avg_score'], 1) : '-' }}
+                                        ({{ $point['session_count'] }})
+                                    </span>
+                                </div>
+                                <div class="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                                    <div
+                                        class="h-full rounded-full bg-indigo-500"
+                                        style="width: {{ $point['avg_score'] !== null ? max(6, (($point['avg_score'] / max(1, $max7DayScore)) * 100)) : 0 }}%"
+                                    ></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </article>
+
+                <article class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+                    <h2 class="text-sm font-semibold text-white">Score Trend (30 Days)</h2>
+                    <div class="mt-3 grid gap-1" style="grid-template-columns: repeat(30, minmax(0, 1fr));">
+                        @foreach ($analytics['trend_30_days'] as $point)
+                            <div class="group relative h-16">
+                                <div
+                                    class="absolute bottom-0 w-full rounded bg-emerald-500/70"
+                                    style="height: {{ $point['avg_score'] !== null ? max(8, $point['avg_score']) : 4 }}%"
+                                ></div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-xs text-zinc-500">Bars represent daily average score. Empty days stay low.</p>
+                </article>
+            </div>
+
+            <div class="grid gap-3 lg:grid-cols-2">
+                <article class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+                    <h2 class="text-sm font-semibold text-white">Role Performance</h2>
+                    <div class="mt-3 space-y-2">
+                        @forelse ($analytics['role_performance'] as $item)
+                            <div class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
+                                <span class="text-zinc-200">{{ $item['label'] }}</span>
+                                <span class="text-zinc-400">{{ number_format((float) $item['avg_score'], 1) }} avg · {{ $item['count'] }} sessions</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-zinc-500">No completed sessions yet.</p>
+                        @endforelse
+                    </div>
+                </article>
+
+                <article class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
+                    <h2 class="text-sm font-semibold text-white">Top Focus Topics</h2>
+                    <div class="mt-3 space-y-2">
+                        @forelse ($analytics['topic_performance'] as $item)
+                            <div class="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
+                                <span class="text-zinc-200">{{ $item['topic'] }}</span>
+                                <span class="text-zinc-400">{{ number_format((float) $item['avg_score'], 1) }} avg · {{ $item['count'] }} sessions</span>
+                            </div>
+                        @empty
+                            <p class="text-sm text-zinc-500">No topic data yet.</p>
+                        @endforelse
+                    </div>
+                </article>
+            </div>
+
             <form method="GET" action="{{ route('interviews.history') }}" class="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
                 <div class="grid gap-3 md:grid-cols-6">
                     <div>

@@ -80,6 +80,24 @@ class ResponseEvaluatorTest extends TestCase
         $this->assertArrayHasKey('gaps', $result);
     }
 
+    public function test_it_uses_deterministic_scoring_when_ai_gate_is_closed(): void
+    {
+        config([
+            'services.interview_ai.enabled' => true,
+            'services.interview_ai.base_url' => 'https://example.test',
+            'services.interview_ai.chat_endpoint' => '/v1/chat/completions',
+            'services.interview_ai.model' => 'test-model',
+            'services.interview_ai.api_key' => 'test-key',
+        ]);
+
+        Http::fake();
+
+        $result = (new ResponseEvaluator())->evaluate($this->question(), $this->answer(), false);
+
+        $this->assertSame('deterministic_fallback', $result['source']);
+        Http::assertNothingSent();
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -57,4 +57,20 @@ INTERVIEW_AI_BASE_URL=https://api.openai.com
 INTERVIEW_AI_CHAT_ENDPOINT=/v1/chat/completions
 INTERVIEW_AI_MODEL=gpt-4.1-mini
 INTERVIEW_AI_API_KEY=your_api_key
+INTERVIEW_AI_STAGED_MIN_SCORE=70
+INTERVIEW_AI_STAGED_MIN_ANSWER_COUNT=3
+INTERVIEW_AI_STAGED_FORCE_LEVELS=mid
+INTERVIEW_AI_STAGED_FORCE_DIFFICULTIES=hard
+```
+
+Staged behavior:
+- Junior sessions start with deterministic scoring.
+- AI turns on after the minimum answer count when recent average score reaches the threshold.
+- Forced conditions can activate AI earlier (default: `mid` level or `hard` questions).
+- When AI is eligible, detailed AI re-evaluation runs in a **queue job** after the deterministic score is saved.
+
+Run a worker for queued AI scoring:
+
+```bash
+php artisan queue:work
 ```

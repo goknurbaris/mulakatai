@@ -76,28 +76,36 @@ class QuestionBank
             [
                 'topic' => 'React State',
                 'difficulty' => $difficulty,
-                'question' => 'When should you use useState versus useReducer in React?',
+                'question' => $level === 'junior'
+                    ? 'In a small component, when would you choose useState over useReducer?'
+                    : 'How would you decide useState vs useReducer in a large feature with shared transitions?',
                 'keywords' => ['complex state', 'multiple transitions', 'predictable updates', 'reducer'],
                 'ideal_answer' => 'useState is good for simple local state. useReducer is better when state transitions are complex or depend on previous state and actions.',
             ],
             [
                 'topic' => 'Component Design',
                 'difficulty' => $difficulty,
-                'question' => 'How do you decide whether to split a component into smaller components?',
+                'question' => $level === 'junior'
+                    ? 'What are simple signs that a React component should be split into smaller pieces?'
+                    : 'How do you split a feature component while preserving ownership boundaries and reuse?',
                 'keywords' => ['single responsibility', 'reusability', 'readability', 'testability'],
                 'ideal_answer' => 'Split components when responsibilities diverge, JSX becomes hard to read, or logic can be reused and tested separately.',
             ],
             [
                 'topic' => 'Rendering',
                 'difficulty' => $difficulty,
-                'question' => 'What causes unnecessary re-renders in React and how do you reduce them?',
+                'question' => $level === 'junior'
+                    ? 'What are common reasons for unnecessary re-renders in React?'
+                    : 'How do you systematically profile and reduce re-renders in a data-heavy React screen?',
                 'keywords' => ['props reference', 'memo', 'useMemo', 'useCallback'],
                 'ideal_answer' => 'Unstable object/function references and broad state updates can trigger re-renders. memoization and better state boundaries reduce this.',
             ],
             [
                 'topic' => 'Data Fetching',
                 'difficulty' => $difficulty,
-                'question' => 'How would you handle loading, error, and empty states for an API-driven page?',
+                'question' => $level === 'junior'
+                    ? 'How would you show loading, error, and empty states on a simple API page?'
+                    : 'How would you model loading/error/empty states across multiple dependent API calls?',
                 'keywords' => ['loading state', 'error state', 'empty state', 'retry'],
                 'ideal_answer' => 'Model each state explicitly in UI, provide clear user feedback, and offer retry or fallback actions on failure.',
             ],
@@ -118,14 +126,18 @@ class QuestionBank
             [
                 'topic' => 'Performance',
                 'difficulty' => $difficulty,
-                'question' => 'How would you improve initial load performance on a React page?',
+                'question' => $level === 'junior'
+                    ? 'What are your first steps to make a React page load faster?'
+                    : 'How would you optimize initial load performance with measurable frontend metrics?',
                 'keywords' => ['code splitting', 'lazy loading', 'caching', 'bundle size'],
                 'ideal_answer' => 'Reduce bundle size, split routes/components, lazy load non-critical parts, and cache static assets effectively.',
             ],
             [
                 'topic' => 'Testing',
                 'difficulty' => $difficulty,
-                'question' => 'What should be covered by unit tests vs integration tests on frontend?',
+                'question' => $level === 'junior'
+                    ? 'What is the difference between unit and integration tests on frontend?'
+                    : 'How do you design a frontend test pyramid for confidence and maintainability?',
                 'keywords' => ['unit', 'integration', 'user behavior', 'critical paths'],
                 'ideal_answer' => 'Unit tests cover isolated logic and edge cases, while integration tests validate user-facing flows and component interactions.',
             ],
@@ -139,7 +151,9 @@ class QuestionBank
             [
                 'topic' => 'Communication',
                 'difficulty' => $difficulty,
-                'question' => 'How do you communicate trade-offs when choosing a technical approach?',
+                'question' => $level === 'junior'
+                    ? 'How would you explain your technical choice to your teammate?'
+                    : 'How do you communicate technical trade-offs to product and engineering stakeholders?',
                 'keywords' => ['trade-off', 'impact', 'risk', 'alternative'],
                 'ideal_answer' => 'Describe alternatives, explain impact on users and maintainability, and make risks explicit with a clear recommendation.',
             ],
@@ -157,42 +171,54 @@ class QuestionBank
             [
                 'topic' => 'Routing & Controllers',
                 'difficulty' => $difficulty,
-                'question' => 'How do you keep Laravel controllers thin and maintainable?',
+                'question' => $level === 'junior'
+                    ? 'What makes a Laravel controller clean and easy to maintain?'
+                    : 'How do you enforce thin-controller patterns across a growing Laravel codebase?',
                 'keywords' => ['service class', 'validation', 'single responsibility', 'business logic'],
                 'ideal_answer' => 'Move business logic to services/actions, keep validation in Form Requests, and let controllers orchestrate request/response flow.',
             ],
             [
                 'topic' => 'Eloquent',
                 'difficulty' => $difficulty,
-                'question' => 'What causes N+1 queries and how do you prevent them in Laravel?',
+                'question' => $level === 'junior'
+                    ? 'What is an N+1 query problem in Laravel and how do you fix it?'
+                    : 'How do you detect and prevent N+1 issues proactively in Eloquent-heavy features?',
                 'keywords' => ['eager loading', 'with', 'relationships', 'n+1'],
                 'ideal_answer' => 'N+1 happens when relationships are loaded in loops. Prevent it with eager loading using with() and query planning.',
             ],
             [
                 'topic' => 'Validation',
                 'difficulty' => $difficulty,
-                'question' => 'When would you use Form Requests instead of inline validation?',
+                'question' => $level === 'junior'
+                    ? 'When should you prefer Form Request validation in Laravel?'
+                    : 'How do you structure complex validation/authorization rules with Form Requests at scale?',
                 'keywords' => ['form request', 'reusability', 'authorization', 'clean controller'],
                 'ideal_answer' => 'Form Requests improve reuse, authorization handling, and controller cleanliness for non-trivial validation rules.',
             ],
             [
                 'topic' => 'Queues',
                 'difficulty' => $difficulty,
-                'question' => 'Which tasks should be moved to queues in a web application?',
+                'question' => $level === 'junior'
+                    ? 'Which Laravel tasks are good candidates for queues?'
+                    : 'How do you decide queue boundaries and idempotency for backend workflows?',
                 'keywords' => ['email', 'background jobs', 'slow tasks', 'user experience'],
                 'ideal_answer' => 'Slow non-blocking tasks like emails, exports, and heavy API work should run in queues to keep requests fast.',
             ],
             [
                 'topic' => 'Caching',
                 'difficulty' => $difficulty,
-                'question' => 'How would you design cache invalidation for frequently accessed data?',
+                'question' => $level === 'junior'
+                    ? 'How would you cache frequently read data and keep it fresh?'
+                    : 'How do you design cache invalidation strategy for high-traffic, multi-entity data?',
                 'keywords' => ['ttl', 'cache tags', 'invalidation', 'freshness'],
                 'ideal_answer' => 'Use TTL and event-driven invalidation; invalidate when underlying records change to balance freshness and performance.',
             ],
             [
                 'topic' => 'Auth & Security',
                 'difficulty' => $difficulty,
-                'question' => 'What are your first security checks in a Laravel API project?',
+                'question' => $level === 'junior'
+                    ? 'What are the first security checks you do in a Laravel API?'
+                    : 'How do you review Laravel API security posture before production release?',
                 'keywords' => ['authorization', 'validation', 'rate limit', 'csrf', 'sanitization'],
                 'ideal_answer' => 'Ensure strong auth/authorization, strict validation, rate limiting, secure defaults, and proper handling of sensitive data.',
             ],
@@ -206,7 +232,9 @@ class QuestionBank
             [
                 'topic' => 'Testing',
                 'difficulty' => $difficulty,
-                'question' => 'How do feature tests and unit tests complement each other in Laravel?',
+                'question' => $level === 'junior'
+                    ? 'What is the role of unit vs feature tests in Laravel?'
+                    : 'How do you balance unit, feature, and integration tests for backend reliability?',
                 'keywords' => ['feature test', 'unit test', 'integration', 'confidence'],
                 'ideal_answer' => 'Unit tests validate isolated logic; feature tests verify request-to-response behavior and integration confidence.',
             ],
@@ -220,7 +248,9 @@ class QuestionBank
             [
                 'topic' => 'Communication',
                 'difficulty' => $difficulty,
-                'question' => 'How do you explain backend trade-offs to non-technical stakeholders?',
+                'question' => $level === 'junior'
+                    ? 'How would you explain a backend decision in simple terms?'
+                    : 'How do you present backend trade-offs to non-technical stakeholders with clear impact?',
                 'keywords' => ['latency', 'cost', 'risk', 'business impact'],
                 'ideal_answer' => 'Translate technical options into cost, risk, timeline, and user impact with a clear recommendation.',
             ],
@@ -238,28 +268,36 @@ class QuestionBank
             [
                 'topic' => 'Architecture Decisions',
                 'difficulty' => $difficulty,
-                'question' => 'How do you decide what belongs to frontend vs backend in a new feature?',
+                'question' => $level === 'junior'
+                    ? 'In a new feature, how do you decide what to implement on frontend vs backend?'
+                    : 'How do you define ownership boundaries between frontend and backend for a complex feature?',
                 'keywords' => ['separation of concerns', 'security', 'latency', 'ownership'],
                 'ideal_answer' => 'Keep UI/interaction logic on frontend, business rules and sensitive operations on backend, then balance latency and maintainability.',
             ],
             [
                 'topic' => 'API Design',
                 'difficulty' => $difficulty,
-                'question' => 'What makes an API easy for frontend teams to consume?',
+                'question' => $level === 'junior'
+                    ? 'What makes an API easy to use from the frontend side?'
+                    : 'How do you design API contracts that stay stable while products evolve?',
                 'keywords' => ['consistent schema', 'pagination', 'errors', 'versioning'],
                 'ideal_answer' => 'Consistent response shapes, predictable error formats, pagination/filtering conventions, and clear versioning make APIs easier to consume.',
             ],
             [
                 'topic' => 'Authentication Flow',
                 'difficulty' => $difficulty,
-                'question' => 'How would you implement authentication in a fullstack app?',
+                'question' => $level === 'junior'
+                    ? 'How would you build a secure login flow in a fullstack app?'
+                    : 'How would you design authentication and session/token lifecycle for web and API clients?',
                 'keywords' => ['token/session', 'authorization', 'refresh', 'secure storage'],
                 'ideal_answer' => 'Use a secure auth mechanism (session or token), enforce authorization server-side, and handle token/session lifecycle safely.',
             ],
             [
                 'topic' => 'State & Caching',
                 'difficulty' => $difficulty,
-                'question' => 'How do client-side state and server-side caching complement each other?',
+                'question' => $level === 'junior'
+                    ? 'How do frontend state and backend caching work together?'
+                    : 'How do you coordinate frontend cache policies with backend cache invalidation?',
                 'keywords' => ['client cache', 'server cache', 'stale data', 'invalidation'],
                 'ideal_answer' => 'Client cache improves UX responsiveness while server cache reduces backend load; both need coherent invalidation strategies.',
             ],
@@ -280,14 +318,18 @@ class QuestionBank
             [
                 'topic' => 'Testing Strategy',
                 'difficulty' => $difficulty,
-                'question' => 'How do you split tests across frontend, backend, and end-to-end?',
+                'question' => $level === 'junior'
+                    ? 'How would you split tests between frontend, backend, and end-to-end?'
+                    : 'How do you optimize fullstack test strategy for speed and release confidence?',
                 'keywords' => ['unit', 'integration', 'e2e', 'critical flow'],
                 'ideal_answer' => 'Use unit tests for isolated logic, integration tests for contracts, and E2E for top business-critical journeys.',
             ],
             [
                 'topic' => 'CI/CD',
                 'difficulty' => $difficulty,
-                'question' => 'What should a good CI/CD pipeline validate for fullstack projects?',
+                'question' => $level === 'junior'
+                    ? 'What checks should a basic CI/CD pipeline run for a fullstack app?'
+                    : 'What quality gates should an enterprise fullstack CI/CD pipeline enforce?',
                 'keywords' => ['tests', 'lint', 'build', 'migrations', 'rollback'],
                 'ideal_answer' => 'A robust pipeline runs quality checks, build steps, safe migration strategy, and supports rollback-friendly deployments.',
             ],
@@ -301,7 +343,9 @@ class QuestionBank
             [
                 'topic' => 'Communication',
                 'difficulty' => $difficulty,
-                'question' => 'How do you communicate cross-team trade-offs between frontend and backend priorities?',
+                'question' => $level === 'junior'
+                    ? 'How do you align frontend and backend teammates when priorities conflict?'
+                    : 'How do you drive cross-team trade-off decisions between frontend and backend priorities?',
                 'keywords' => ['trade-off', 'scope', 'risk', 'impact'],
                 'ideal_answer' => 'Make trade-offs explicit around scope, risk, and user impact, then align teams on a shared delivery plan.',
             ],
