@@ -348,6 +348,32 @@ class InterviewSessionController extends Controller
         return redirect()->route('interviews.show', $interviewSession);
     }
 
+    public function retake(InterviewSession $interviewSession, QuestionBank $questionBank): Response
+    {
+        $this->assertOwnership($interviewSession);
+
+        $questions = $questionBank->forRoleLevel(
+            $interviewSession->role,
+            $interviewSession->level,
+            $interviewSession->focus_topic
+        );
+
+        abort_if($questions === [], 422, 'No interview questions available for this role.');
+
+        $retakeSession = InterviewSession::create([
+            'user_id' => Auth::id(),
+            'role' => $interviewSession->role,
+            'level' => $interviewSession->level,
+            'focus_topic' => $interviewSession->focus_topic,
+            'interview_objective' => $interviewSession->interview_objective,
+            'questions_snapshot' => $questions,
+            'current_question_index' => 0,
+            'status' => 'in_progress',
+        ]);
+
+        return redirect()->route('interviews.show', $retakeSession);
+    }
+
     public function destroy(InterviewSession $interviewSession): Response
     {
         $this->assertOwnership($interviewSession);

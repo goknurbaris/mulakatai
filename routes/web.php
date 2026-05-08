@@ -20,6 +20,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/app', [InterviewSessionController::class, 'start'])->name('interviews.start');
     Route::post('/interviews', [InterviewSessionController::class, 'store'])->name('interviews.store');
     Route::get('/interviews/{interviewSession}/resume', [InterviewSessionController::class, 'resume'])->name('interviews.resume');
+    Route::post('/interviews/{interviewSession}/retake', [InterviewSessionController::class, 'retake'])->name('interviews.retake');
     Route::delete('/interviews/{interviewSession}', [InterviewSessionController::class, 'destroy'])->name('interviews.destroy');
     Route::get('/interviews/{interviewSession}', [InterviewSessionController::class, 'show'])->name('interviews.show');
     Route::post('/interviews/{interviewSession}/answers', [InterviewSessionController::class, 'submitAnswer'])->name('interviews.answer');

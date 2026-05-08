@@ -11,6 +11,10 @@
         <div class="mb-4 flex items-center justify-between gap-3">
             <a href="{{ route('interviews.history') }}" class="text-xs font-medium text-zinc-400 transition hover:text-zinc-200">← Back to dashboard</a>
             <div class="flex items-center gap-3">
+                <form method="POST" action="{{ route('interviews.retake', $session) }}">
+                    @csrf
+                    <button type="submit" class="rounded-lg border border-indigo-700/60 bg-indigo-900/20 px-3 py-1.5 text-xs font-semibold text-indigo-200 transition hover:bg-indigo-900/35">Retake Interview</button>
+                </form>
                 <a href="{{ route('interviews.export', $session) }}" class="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-800">Export JSON</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

@@ -471,6 +471,43 @@ class InterviewFlowTest extends TestCase
         $this->assertDatabaseMissing('interview_sessions', ['id' => $session->id]);
     }
 
+    public function test_user_can_retake_completed_interview_session(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $session = InterviewSession::create([
+            'user_id' => $user->id,
+            'role' => 'backend',
+            'level' => 'mid',
+            'focus_topic' => 'Eloquent',
+            'interview_objective' => 'Prepare for interviews',
+            'status' => 'completed',
+            'current_question_index' => 10,
+            'total_score' => 85,
+            'questions_snapshot' => [
+                ['topic' => 'Eloquent', 'difficulty' => 'medium', 'question' => 'Q1'],
+            ],
+        ]);
+
+        $response = $this->post(route('interviews.retake', $session));
+
+        $newSession = InterviewSession::query()
+            ->where('user_id', $user->id)
+            ->where('status', 'in_progress')
+            ->where('id', '!=', $session->id)
+            ->latest('id')
+            ->firstOrFail();
+
+        $response->assertRedirect(route('interviews.show', $newSession));
+        $this->assertSame('backend', $newSession->role);
+        $this->assertSame('mid', $newSession->level);
+        $this->assertSame('Eloquent', $newSession->focus_topic);
+        $this->assertSame('Prepare for interviews', $newSession->interview_objective);
+        $this->assertSame(0, $newSession->current_question_index);
+        $this->assertCount(10, $newSession->questions_snapshot);
+    }
+
     public function test_user_cannot_delete_another_users_session(): void
     {
         $owner = User::factory()->create();

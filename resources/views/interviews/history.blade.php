@@ -173,6 +173,10 @@
                             @if ($session->status === 'completed')
                                 <span class="rounded-full border border-emerald-800/60 bg-emerald-900/30 px-3 py-1 text-xs text-emerald-300">Completed</span>
                                 <a href="{{ route('interviews.result', $session) }}" class="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800">View Result</a>
+                                <form method="POST" action="{{ route('interviews.retake', $session) }}">
+                                    @csrf
+                                    <button type="submit" class="rounded-xl border border-indigo-700/60 bg-indigo-900/20 px-3 py-2 text-sm text-indigo-200 hover:bg-indigo-900/35">Retake</button>
+                                </form>
                             @else
                                 <span class="rounded-full border border-amber-800/60 bg-amber-900/30 px-3 py-1 text-xs text-amber-300">In progress</span>
                                 <a href="{{ route('interviews.resume', $session) }}" class="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800">Continue</a>
