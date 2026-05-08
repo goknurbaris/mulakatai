@@ -361,6 +361,47 @@ class InterviewFlowTest extends TestCase
             ->assertSee('Mark as pending');
     }
 
+    public function test_user_can_bulk_complete_and_reset_learning_plan_items(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $session = InterviewSession::create([
+            'user_id' => $user->id,
+            'role' => 'backend',
+            'level' => 'mid',
+            'focus_topic' => 'Caching',
+            'status' => 'completed',
+            'current_question_index' => 10,
+            'total_score' => 78,
+            'questions_snapshot' => [
+                ['topic' => 'Caching', 'difficulty' => 'medium', 'question' => 'Q1'],
+            ],
+        ]);
+
+        LearningPlan::create([
+            'interview_session_id' => $session->id,
+            'plan_json' => [
+                ['day' => 'Day 1', 'focus' => 'Caching', 'task' => 'Task 1', 'completed' => false],
+                ['day' => 'Day 2', 'focus' => 'Queues', 'task' => 'Task 2', 'completed' => false],
+            ],
+        ]);
+
+        $this->patch(route('interviews.learning-plan.bulk', $session), ['action' => 'complete'])
+            ->assertRedirect(route('interviews.result', $session));
+
+        $session->refresh();
+        $this->assertTrue((bool) ($session->learningPlan?->plan_json[0]['completed'] ?? false));
+        $this->assertTrue((bool) ($session->learningPlan?->plan_json[1]['completed'] ?? false));
+
+        $this->patch(route('interviews.learning-plan.bulk', $session), ['action' => 'reset'])
+            ->assertRedirect(route('interviews.result', $session));
+
+        $session->refresh();
+        $this->assertFalse((bool) ($session->learningPlan?->plan_json[0]['completed'] ?? true));
+        $this->assertFalse((bool) ($session->learningPlan?->plan_json[1]['completed'] ?? true));
+    }
+
     public function test_user_can_export_completed_interview_result_as_json(): void
     {
         $user = User::factory()->create();

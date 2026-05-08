@@ -411,6 +411,38 @@ class InterviewSessionController extends Controller
         return redirect()->route('interviews.result', $interviewSession);
     }
 
+    public function toggleAllLearningPlanItems(Request $request, InterviewSession $interviewSession): Response
+    {
+        $this->assertOwnership($interviewSession);
+
+        if ($interviewSession->status !== 'completed') {
+            return redirect()->route('interviews.show', $interviewSession);
+        }
+
+        $validated = $request->validate([
+            'action' => ['required', Rule::in(['complete', 'reset'])],
+        ]);
+
+        $learningPlan = $interviewSession->learningPlan;
+        abort_if($learningPlan === null, 404);
+
+        $plan = $this->normalizedLearningPlan($learningPlan->plan_json ?? []);
+        $completed = $validated['action'] === 'complete';
+
+        $updatedPlan = array_map(
+            static function (array $item) use ($completed): array {
+                $item['completed'] = $completed;
+
+                return $item;
+            },
+            $plan
+        );
+
+        $learningPlan->update(['plan_json' => $updatedPlan]);
+
+        return redirect()->route('interviews.result', $interviewSession);
+    }
+
     /**
      * @return array{strengths: array<int, string>, gaps: array<int, string>}
      */

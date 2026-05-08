@@ -25,6 +25,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/interviews/{interviewSession}', [InterviewSessionController::class, 'show'])->name('interviews.show');
     Route::post('/interviews/{interviewSession}/answers', [InterviewSessionController::class, 'submitAnswer'])->name('interviews.answer');
     Route::patch('/interviews/{interviewSession}/learning-plan/{dayIndex}', [InterviewSessionController::class, 'toggleLearningPlanItem'])->name('interviews.learning-plan.toggle');
+    Route::patch('/interviews/{interviewSession}/learning-plan', [InterviewSessionController::class, 'toggleAllLearningPlanItems'])->name('interviews.learning-plan.bulk');
     Route::get('/interviews/{interviewSession}/result', [InterviewSessionController::class, 'result'])->name('interviews.result');
     Route::get('/interviews/{interviewSession}/export', [InterviewSessionController::class, 'exportResult'])->name('interviews.export');
 });

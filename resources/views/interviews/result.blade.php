@@ -89,10 +89,26 @@
                 $totalPlanItems = count($learningPlan);
                 $planProgress = $totalPlanItems > 0 ? (int) round(($completedPlanItems / $totalPlanItems) * 100) : 0;
             @endphp
-            <div class="mt-3">
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
                 <p class="text-sm text-zinc-400">Progress: <span class="font-semibold text-zinc-200">{{ $completedPlanItems }}/{{ $totalPlanItems }}</span> ({{ $planProgress }}%)</p>
                 <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-zinc-800">
                     <div class="h-full rounded-full bg-emerald-500" style="width: {{ $planProgress }}%"></div>
+                </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <form method="POST" action="{{ route('interviews.learning-plan.bulk', $session) }}">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="action" value="complete">
+                        <button type="submit" class="rounded-lg border border-emerald-700/60 bg-emerald-900/20 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-900/35">Mark all done</button>
+                    </form>
+                    <form method="POST" action="{{ route('interviews.learning-plan.bulk', $session) }}">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="action" value="reset">
+                        <button type="submit" class="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-zinc-800">Reset all</button>
+                    </form>
                 </div>
             </div>
             <div class="mt-4 grid gap-3 md:grid-cols-2">
