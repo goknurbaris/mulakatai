@@ -136,6 +136,7 @@ class InterviewSessionController extends Controller
 
         $focusValidated = $request->validate([
             'focus_topic' => ['required', 'string', Rule::in($questionBank->topicOptionsForRole($validated['role']))],
+            'interview_objective' => ['nullable', 'string', 'max:120'],
         ]);
 
         $questions = $questionBank->forRoleLevel($validated['role'], $validated['level'], $focusValidated['focus_topic']);
@@ -147,6 +148,7 @@ class InterviewSessionController extends Controller
             'role' => $validated['role'],
             'level' => $validated['level'],
             'focus_topic' => $focusValidated['focus_topic'],
+            'interview_objective' => $focusValidated['interview_objective'] ?? null,
             'questions_snapshot' => $questions,
             'current_question_index' => 0,
             'status' => 'in_progress',

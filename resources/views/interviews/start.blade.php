@@ -76,6 +76,22 @@
                 @enderror
                             </div>
 
+                            <div>
+                                <label for="interview_objective" class="mb-2 block text-sm font-medium text-zinc-200">Interview Objective (optional)</label>
+                                <input
+                                    type="text"
+                                    name="interview_objective"
+                                    id="interview_objective"
+                                    maxlength="120"
+                                    value="{{ old('interview_objective') }}"
+                                    placeholder="e.g. Prepare for Laravel backend interview"
+                                    class="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 outline-none transition placeholder:text-zinc-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+                                >
+                @error('interview_objective')
+                                    <div class="mt-2 text-sm text-rose-400">{{ $message }}</div>
+                @enderror
+                            </div>
+
                             <button type="submit" class="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200">
                                 Start 10-Question Interview
                             </button>

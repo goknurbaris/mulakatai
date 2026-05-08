@@ -14,6 +14,7 @@ class InterviewSession extends Model
         'role',
         'level',
         'focus_topic',
+        'interview_objective',
         'status',
         'current_question_index',
         'total_score',

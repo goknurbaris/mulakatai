@@ -85,12 +85,14 @@ class InterviewFlowTest extends TestCase
             'role' => 'fullstack',
             'level' => 'mid',
             'focus_topic' => 'API Design',
+            'interview_objective' => 'Prepare for a product company fullstack interview',
         ])->assertRedirect();
 
         $session = InterviewSession::query()->firstOrFail();
 
         $this->assertSame('fullstack', $session->role);
         $this->assertSame('API Design', $session->focus_topic);
+        $this->assertSame('Prepare for a product company fullstack interview', $session->interview_objective);
         $this->assertCount(10, $session->questions_snapshot);
         $this->assertSame('API Design', $session->questions_snapshot[0]['topic']);
     }

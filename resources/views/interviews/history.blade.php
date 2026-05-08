@@ -164,6 +164,9 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p class="text-sm text-zinc-300">Role: {{ $roleOptions[$session->role] ?? ucfirst($session->role) }} | Level: {{ strtoupper($session->level) }} | Focus: {{ $session->focus_topic ?? '-' }}</p>
+                            @if (filled($session->interview_objective))
+                                <p class="mt-1 text-xs text-zinc-400">Objective: {{ $session->interview_objective }}</p>
+                            @endif
                             <p class="mt-1 text-xs text-zinc-500">Created: {{ $session->created_at->format('Y-m-d H:i') }}</p>
                         </div>
                         <div class="flex items-center gap-3">

@@ -21,6 +21,9 @@
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <p class="text-sm text-zinc-400">Role: {{ $roleLabel }} | Level: {{ strtoupper($session->level) }} | Focus: {{ $session->focus_topic ?? '-' }}</p>
+                    @if (filled($session->interview_objective))
+                        <p class="mt-1 text-sm text-zinc-400">Objective: {{ $session->interview_objective }}</p>
+                    @endif
                     <p class="mt-1 text-4xl font-bold text-white">{{ number_format($session->total_score ?? 0, 1) }}<span class="text-lg text-zinc-400">/100</span></p>
                 </div>
             </div>
