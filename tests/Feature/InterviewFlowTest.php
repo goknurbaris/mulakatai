@@ -359,6 +359,57 @@ class InterviewFlowTest extends TestCase
             ->assertSee('Mark as pending');
     }
 
+    public function test_user_can_export_completed_interview_result_as_json(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $session = InterviewSession::create([
+            'user_id' => $user->id,
+            'role' => 'backend',
+            'level' => 'mid',
+            'focus_topic' => 'Caching',
+            'interview_objective' => 'Prepare for platform role',
+            'status' => 'completed',
+            'current_question_index' => 10,
+            'total_score' => 82.5,
+            'summary' => ['strengths' => ['Clear communication'], 'gaps' => ['More depth']],
+            'questions_snapshot' => [
+                ['topic' => 'Caching', 'difficulty' => 'medium', 'question' => 'Q1'],
+            ],
+        ]);
+
+        InterviewAnswer::create([
+            'interview_session_id' => $session->id,
+            'question_index' => 0,
+            'topic' => 'Caching',
+            'question_text' => 'How would you cache frequently read data?',
+            'user_answer' => 'I would use TTL and invalidate on updates.',
+            'ai_score' => 80,
+            'feedback_json' => [
+                'strengths' => ['Clear communication'],
+                'gaps' => ['More depth'],
+                'ideal_answer' => 'Use TTL and event-driven invalidation.',
+                'next_question_difficulty' => 'medium',
+                'breakdown' => ['accuracy' => 80, 'depth' => 75, 'clarity' => 85, 'problem_solving' => 80],
+            ],
+        ]);
+
+        LearningPlan::create([
+            'interview_session_id' => $session->id,
+            'plan_json' => [
+                ['day' => 'Day 1', 'focus' => 'Caching', 'task' => 'Read cache docs', 'completed' => false],
+            ],
+        ]);
+
+        $response = $this->get(route('interviews.export', $session));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/json');
+        $this->assertStringContainsString('Prepare for platform role', $response->streamedContent());
+        $this->assertStringContainsString('Clear communication', $response->streamedContent());
+    }
+
     public function test_history_supports_filters_and_pagination(): void
     {
         $user = User::factory()->create();

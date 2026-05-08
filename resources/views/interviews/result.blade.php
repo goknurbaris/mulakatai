@@ -8,12 +8,15 @@
 </head>
 <body class="min-h-screen bg-zinc-950 text-zinc-100">
     <main class="mx-auto w-full max-w-5xl px-4 py-10">
-        <div class="mb-4 flex items-center justify-between">
+        <div class="mb-4 flex items-center justify-between gap-3">
             <a href="{{ route('interviews.history') }}" class="text-xs font-medium text-zinc-400 transition hover:text-zinc-200">← Back to dashboard</a>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="text-xs font-medium text-zinc-400 transition hover:text-zinc-200">Logout</button>
-            </form>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('interviews.export', $session) }}" class="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-800">Export JSON</a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="text-xs font-medium text-zinc-400 transition hover:text-zinc-200">Logout</button>
+                </form>
+            </div>
         </div>
         <h1 class="text-3xl font-semibold tracking-tight text-white">Interview Summary</h1>
 

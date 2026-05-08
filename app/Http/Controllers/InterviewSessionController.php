@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class InterviewSessionController extends Controller
@@ -299,6 +300,41 @@ class InterviewSessionController extends Controller
             'summary' => $interviewSession->summary ?? ['strengths' => [], 'gaps' => []],
             'learningPlan' => $learningPlan,
         ]);
+    }
+
+    public function exportResult(InterviewSession $interviewSession, QuestionBank $questionBank): Response|StreamedResponse
+    {
+        $this->assertOwnership($interviewSession);
+
+        if ($interviewSession->status !== 'completed') {
+            return redirect()->route('interviews.show', $interviewSession);
+        }
+
+        $payload = [
+            'session_id' => $interviewSession->id,
+            'role' => $questionBank->roleLabel($interviewSession->role),
+            'level' => $interviewSession->level,
+            'focus_topic' => $interviewSession->focus_topic,
+            'interview_objective' => $interviewSession->interview_objective,
+            'total_score' => $interviewSession->total_score,
+            'summary' => $interviewSession->summary ?? ['strengths' => [], 'gaps' => []],
+            'answers' => $interviewSession->answers()
+                ->orderBy('question_index')
+                ->get(['question_index', 'topic', 'question_text', 'user_answer', 'ai_score', 'feedback_json'])
+                ->toArray(),
+            'learning_plan' => $this->normalizedLearningPlan($interviewSession->learningPlan?->plan_json ?? []),
+            'exported_at' => now()->toIso8601String(),
+        ];
+
+        $filename = sprintf('interview-result-%d.json', $interviewSession->id);
+
+        return response()->streamDownload(
+            static function () use ($payload): void {
+                echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            },
+            $filename,
+            ['Content-Type' => 'application/json']
+        );
     }
 
     public function resume(InterviewSession $interviewSession): Response
