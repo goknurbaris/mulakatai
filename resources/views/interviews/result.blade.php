@@ -31,6 +31,12 @@
                     @if (filled($session->interview_objective))
                         <p class="mt-1 text-sm text-zinc-400">Objective: {{ $session->interview_objective }}</p>
                     @endif
+                    @if ($session->started_at && $session->completed_at)
+                        <p class="mt-1 text-sm text-zinc-400">
+                            Duration: {{ round($session->completed_at->diffInSeconds($session->started_at) / 60, 1) }} min
+                            ({{ $session->started_at->format('Y-m-d H:i') }} - {{ $session->completed_at->format('Y-m-d H:i') }})
+                        </p>
+                    @endif
                     <p class="mt-1 text-4xl font-bold text-white">{{ number_format($session->total_score ?? 0, 1) }}<span class="text-lg text-zinc-400">/100</span></p>
                 </div>
             </div>

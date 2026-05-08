@@ -47,7 +47,11 @@ class InterviewSessionController extends Controller
         $completedSessionsForAnalytics = (clone $completedSessions)
             ->whereNotNull('total_score')
             ->orderBy('created_at')
-            ->get(['role', 'focus_topic', 'total_score', 'created_at']);
+            ->get(['role', 'focus_topic', 'total_score', 'created_at', 'started_at', 'completed_at']);
+        $averageDurationMinutes = (float) $completedSessionsForAnalytics
+            ->filter(static fn ($session): bool => $session->started_at !== null && $session->completed_at !== null)
+            ->map(static fn ($session): float => max(0, $session->completed_at->diffInSeconds($session->started_at)))
+            ->avg();
         $trend30 = $this->buildDailyTrend($completedSessionsForAnalytics->all(), 30);
         $trend7 = array_slice($trend30, -7);
         $rolePerformance = $completedSessionsForAnalytics
@@ -107,6 +111,7 @@ class InterviewSessionController extends Controller
                 'completed_sessions' => $completedCount,
                 'in_progress_sessions' => $inProgressCount,
                 'average_completed_score' => round($averageCompletedScore, 1),
+                'average_duration_minutes' => round($averageDurationMinutes / 60, 1),
                 'completion_rate' => $completionRate,
             ],
             'analytics' => [
@@ -153,6 +158,7 @@ class InterviewSessionController extends Controller
             'questions_snapshot' => $questions,
             'current_question_index' => 0,
             'status' => 'in_progress',
+            'started_at' => now(),
         ]);
 
         return redirect()->route('interviews.show', $session);
@@ -258,6 +264,7 @@ class InterviewSessionController extends Controller
                 'status' => 'completed',
                 'total_score' => round($averageScore, 2),
                 'summary' => $summary,
+                'completed_at' => now(),
             ]);
 
             $interviewSession->learningPlan()->updateOrCreate(
@@ -369,6 +376,7 @@ class InterviewSessionController extends Controller
             'questions_snapshot' => $questions,
             'current_question_index' => 0,
             'status' => 'in_progress',
+            'started_at' => now(),
         ]);
 
         return redirect()->route('interviews.show', $retakeSession);

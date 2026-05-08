@@ -40,6 +40,7 @@
                     <p class="text-xs uppercase tracking-wide text-zinc-400">Completion Rate</p>
                     <p class="mt-2 text-2xl font-semibold text-indigo-300">{{ $stats['completion_rate'] }}%</p>
                     <p class="mt-1 text-xs text-zinc-500">Avg completed score: {{ number_format($stats['average_completed_score'], 1) }}</p>
+                    <p class="mt-1 text-xs text-zinc-500">Avg duration: {{ number_format($stats['average_duration_minutes'], 1) }} min</p>
                 </article>
             </div>
 
@@ -166,6 +167,9 @@
                             <p class="text-sm text-zinc-300">Role: {{ $roleOptions[$session->role] ?? ucfirst($session->role) }} | Level: {{ strtoupper($session->level) }} | Focus: {{ $session->focus_topic ?? '-' }}</p>
                             @if (filled($session->interview_objective))
                                 <p class="mt-1 text-xs text-zinc-400">Objective: {{ $session->interview_objective }}</p>
+                            @endif
+                            @if ($session->started_at && $session->completed_at)
+                                <p class="mt-1 text-xs text-zinc-400">Duration: {{ round($session->completed_at->diffInSeconds($session->started_at) / 60, 1) }} min</p>
                             @endif
                             <p class="mt-1 text-xs text-zinc-500">Created: {{ $session->created_at->format('Y-m-d H:i') }}</p>
                         </div>

@@ -16,6 +16,8 @@ class InterviewSession extends Model
         'focus_topic',
         'interview_objective',
         'status',
+        'started_at',
+        'completed_at',
         'current_question_index',
         'total_score',
         'questions_snapshot',
@@ -26,6 +28,8 @@ class InterviewSession extends Model
         'questions_snapshot' => 'array',
         'summary' => 'array',
         'total_score' => 'float',
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     public function answers(): HasMany

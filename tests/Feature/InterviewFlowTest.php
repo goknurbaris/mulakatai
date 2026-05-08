@@ -30,6 +30,7 @@ class InterviewFlowTest extends TestCase
         /** @var InterviewSession $session */
         $session = InterviewSession::query()->firstOrFail();
         $this->assertSame($user->id, $session->user_id);
+        $this->assertNotNull($session->started_at);
 
         for ($index = 0; $index < 10; $index++) {
             $this->get(route('interviews.show', $session))
@@ -52,6 +53,7 @@ class InterviewFlowTest extends TestCase
 
         $this->assertSame('completed', $session->status);
         $this->assertNotNull($session->total_score);
+        $this->assertNotNull($session->completed_at);
         $this->assertCount(10, $session->answers);
         $this->assertNotNull($session->learningPlan);
 
